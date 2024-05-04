@@ -1,6 +1,7 @@
 package com.example.products.view
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -31,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -62,7 +62,11 @@ fun ProductScreen(
 
     val qurrentProduct = ProductManager.currentProduct.collectAsState().value.currentProduct
 
-    val product = viewModel.listOfProducts.collectAsState().value.listProducts!![qurrentProduct - 1]
+    Log.e("Вью два:", viewModel.listOfProducts.collectAsState().value.listProducts!!.toString())
+
+    val productsState = viewModel.listOfProducts.collectAsState().value
+    val product = productsState.listProducts?.find { it.id == qurrentProduct }
+
 
     Scaffold(
         Modifier.fillMaxSize(),
@@ -78,7 +82,8 @@ fun ProductScreen(
                         text = "Подробнее",
                         fontFamily = nunitoFontFamily,
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 26.sp
+                        fontSize = 26.sp,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 navigationIcon = {
@@ -95,9 +100,11 @@ fun ProductScreen(
         ) { innerPadding ->
         when (appState) {
             AppState.LOADING -> widgets.CustomCircularProgressBar()
-            AppState.SUCCESS -> ProductDescription(
-                Modifier.padding(innerPadding), product
-            )
+            AppState.SUCCESS -> product?.let {
+                ProductDescription(
+                    Modifier.padding(innerPadding), it
+                )
+            }
 
             AppState.ERROR -> widgets.EmptyText()
         }

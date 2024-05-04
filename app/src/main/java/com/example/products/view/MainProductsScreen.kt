@@ -1,7 +1,8 @@
 package com.example.products.view
 
-import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,8 +42,8 @@ import coil.compose.AsyncImage
 import com.example.products.model.Product
 import com.example.products.navigation.Screens
 import com.example.products.ui.theme.nunitoFontFamily
-import com.example.products.viewmodel.ProductsViewModel
 import com.example.products.viewmodel.Factory.ProductsViewModelFactory
+import com.example.products.viewmodel.ProductsViewModel
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
 import com.example.products.viewmodel.appstate.ProductManager
@@ -62,7 +64,7 @@ fun MainProductsScreen(
     val listOfProducts = viewModel.listOfProducts.collectAsState().value.listProducts
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = appState == AppState.LOADING)
 
-    Log.e("Состояние вью:", appState.toString())
+//    Log.e("Состояние вью:", appState.toString())
 
     Scaffold(
         Modifier.fillMaxSize(),
@@ -76,7 +78,8 @@ fun MainProductsScreen(
                     text = "Продукты",
                     fontFamily = nunitoFontFamily,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 26.sp
+                    fontSize = 26.sp,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             })
         },
@@ -90,7 +93,7 @@ fun MainProductsScreen(
                 },
             ) {
                 ScreenBody(
-                    Modifier.padding(innerPadding), navController, listOfProducts
+                    Modifier.padding(innerPadding), navController, listOfProducts, viewModel
                 )
             }
 
@@ -108,9 +111,46 @@ fun MainProductsScreen(
 
 @Composable
 private fun ScreenBody(
-    modifier: Modifier, navController: NavController, listOfProducts: List<Product>?
+    modifier: Modifier,
+    navController: NavController,
+    listOfProducts: List<Product>?,
+    viewModel: ProductsViewModel
 ) {
-    Box(modifier) {
+
+    Column(modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
+            Box(
+                modifier = Modifier
+                    .height(48.dp)
+                    .width(128.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable { viewModel.changePage(false) }, Alignment.Center
+            ) {
+                Text(
+                    text = "Назад",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .height(48.dp)
+                    .width(128.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable { viewModel.changePage(true) }, Alignment.Center
+            ) {
+                Text(
+                    text = "Вперед",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+
+                    )
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
         LazyColumn(Modifier.padding(horizontal = 12.dp)) {
             if (listOfProducts != null) {
                 items(listOfProducts) { product ->
@@ -128,7 +168,7 @@ private fun CustomListItem(
     navController: NavController,
     product: Product,
     backgroundColor: Color = MaterialTheme.colorScheme.primary,
-    ProductManager: ProductManager
+    productManager: ProductManager
 ) {
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -137,7 +177,7 @@ private fun CustomListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                ProductManager.updateCurrentProduct(product.id)
+                productManager.updateCurrentProduct(product.id)
                 navController.navigate(Screens.ProductScreen.route)
             }, color = backgroundColor, shape = RoundedCornerShape(16.dp)
     ) {
@@ -161,19 +201,22 @@ private fun CustomListItem(
                     text = product.title,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
                 Text(
                     text = product.description,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = "$${product.price}",
                 style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onPrimary
             )
         }
     }
