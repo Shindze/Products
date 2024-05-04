@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.products.model.SharedPrefManager
+import com.example.products.viewmodel.appstate.ProductManager
 import com.example.products.viewmodel.uiState.ProductScreenUiState
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +27,7 @@ class ProductViewModel(context: Context) : ViewModel() {
 
     private fun getProducts() {
         _listOfProducts.value = _listOfProducts.value.copy(
-            listProducts = sharedPrefManager.getProducts()
+            listProducts = sharedPrefManager.getProducts(ProductManager.currentPage.value.currentPage)
         )
     }
 

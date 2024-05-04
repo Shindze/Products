@@ -9,6 +9,7 @@ import com.example.products.model.SharedPrefManager
 import com.example.products.repository.ProductsRepository
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
+import com.example.products.viewmodel.appstate.ProductManager
 import com.example.products.viewmodel.uiState.MainScreenUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -26,31 +27,14 @@ class ProductsViewModel(context: Context) : ViewModel() {
     val listOfProducts: StateFlow<MainScreenUiState> = _listOfProducts.asStateFlow()
 
     private val sharedPrefManager = SharedPrefManager(context)
-
     private var count: Int = 0
 
     init {
-
-        Log.e("Вьюмодель инит:", sharedPrefManager.getProducts().toString())
-
-        // Сохранено? Выгружаем
-        if (sharedPrefManager.getProducts() != null) {
-            _listOfProducts.value = _listOfProducts.value.copy(
-                listProducts = sharedPrefManager.getProducts()
-            )
-            AppStateManager.setState(AppState.SUCCESS)
-        } else {
-
-            Log.e("Вьюмодель инит:", "Запрос")
-            // Не сохранено? Загружаем
-            getProducts()
-        }
+        Log.e("Вьюмодель инит:", "Запрос")
+        getProducts()
     }
 
     private fun getProducts(count: Int = 0) {
-
-        loadData()
-
         viewModelScope.launch(Dispatchers.Main) {
             try {
                 val rates = repo.fetchProducts(count, sharedPrefManager)
@@ -85,7 +69,8 @@ class ProductsViewModel(context: Context) : ViewModel() {
 
     fun updateProducts() {
         count = 0
-        sharedPrefManager.clearKey()
+        ProductManager.updateCurrentPage(1)
+        sharedPrefManager.clearData()
         getProducts()
     }
 
@@ -104,11 +89,11 @@ class ProductsViewModel(context: Context) : ViewModel() {
         getProducts(count)
     }
 
-    private fun loadData() {
-        viewModelScope.launch() {
-            AppStateManager.setState(AppState.LOADING)
-        }
-    }
+//    private fun loadData() {
+//        viewModelScope.launch() {
+//            AppStateManager.setState(AppState.LOADING)
+//        }
+//    }
 
     override fun onCleared() {
         super.onCleared()

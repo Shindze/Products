@@ -5,26 +5,34 @@ import com.example.products.model.Product
 import com.example.products.model.SharedPrefManager
 import com.example.products.network.ApiClient
 import com.example.products.network.ApiService
+import com.example.products.viewmodel.appstate.AppState
+import com.example.products.viewmodel.appstate.AppStateManager
+import com.example.products.viewmodel.appstate.ProductManager
 
 class ProductsRepository(private val apiService: ApiService) {
-
-    private val productsRatesCache = mutableListOf<Product>()
-
     suspend fun fetchProducts(
-        skip: Int = 0, sharedPrefManager: SharedPrefManager
+        skip: Int = 0,
+        sharedPrefManager: SharedPrefManager
     ): List<Product>? {
+
+        val currentPage = ProductManager.currentPage.value.currentPage
+        val cachedProducts = sharedPrefManager.getProducts(currentPage)
+
+        if (!cachedProducts.isNullOrEmpty()) {
+            return cachedProducts
+        }
+
         return try {
-            //            // Попытка получения кеша
-            //            val productsRatesCache = sharedPrefManager.getProducts() ?: listOf()
-            //            Log.e("Кэш:", productsRatesCache.toString())
+            AppStateManager.setState(AppState.LOADING)
 
             val response = apiService.getProducts(skip)
+            val products = response.products
 
-            sharedPrefManager.saveProducts(response.products)
-            sharedPrefManager.getProducts()
-
+            sharedPrefManager.saveProducts(products, currentPage)
+            products
         } catch (e: Exception) {
-            Log.e("Репо ошибка", "Ошибка при загрузке продуктов: ${e.message}")
+            Log.e("Репо:", "Не получилось загрузить: ${e.message}")
+            AppStateManager.setState(AppState.ERROR)
             null
         }
     }

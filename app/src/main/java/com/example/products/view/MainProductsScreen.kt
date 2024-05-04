@@ -125,7 +125,11 @@ private fun ScreenBody(
                     .width(128.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.primary)
-                    .clickable { viewModel.changePage(false) }, Alignment.Center
+                    .clickable {
+                        if (ProductManager.currentPage.value.currentPage > 1)
+                            ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage - 1)
+                        viewModel.changePage(false)
+                    }, Alignment.Center
             ) {
                 Text(
                     text = "Назад",
@@ -139,7 +143,12 @@ private fun ScreenBody(
                     .width(128.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.primary)
-                    .clickable { viewModel.changePage(true) }, Alignment.Center
+                    .clickable {
+                        if (ProductManager.currentPage.value.currentPage < 5) {
+                            ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage + 1)
+                        }
+                        viewModel.changePage(true)
+                    }, Alignment.Center
             ) {
                 Text(
                     text = "Вперед",
