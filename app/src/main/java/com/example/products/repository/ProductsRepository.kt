@@ -37,6 +37,26 @@ class ProductsRepository(private val apiService: ApiService) {
         }
     }
 
+    suspend fun searchProducts(
+        title: String, sharedPrefManager: SharedPrefManager
+
+    ): List<Product>? {
+        return try {
+            AppStateManager.setState(AppState.LOADING)
+
+            val response = apiService.searchProducts(title)
+            val products = response.products
+
+            sharedPrefManager.saveSearchProducts(products)
+
+            products
+        } catch (e: Exception) {
+            Log.e("Репо:", "Не получилось загрузить: ${e.message}")
+            AppStateManager.setState(AppState.ERROR)
+            null
+        }
+    }
+
     companion object {
         @Volatile
         private var INSTANCE: ProductsRepository? = null

@@ -6,6 +6,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.Composable
 import com.example.products.view.MainProductsScreen
 import com.example.products.view.ProductScreen
+import com.example.products.view.SearchScreen
 
 @Composable
 fun Navigation() {
@@ -16,6 +17,10 @@ fun Navigation() {
         }
         composable(route = Screens.ProductScreen.route) {
             ProductScreen(navController = navController)
+        }
+
+        composable(route = Screens.SearchScreen.route) {
+            SearchScreen(navController = navController)
         }
     }
 }

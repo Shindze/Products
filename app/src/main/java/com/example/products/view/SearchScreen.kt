@@ -2,7 +2,6 @@ package com.example.products.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,18 +16,26 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,39 +43,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.products.model.Product
 import com.example.products.navigation.Screens
 import com.example.products.ui.theme.nunitoFontFamily
-import com.example.products.viewmodel.Factory.ProductsViewModelFactory
-import com.example.products.viewmodel.ProductsViewModel
+import com.example.products.viewmodel.Factory.SearchViewModelFactory
+import com.example.products.viewmodel.SearchViewModel
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
 import com.example.products.viewmodel.appstate.ProductManager
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainProductsScreen(
-    navController: NavController, viewModel: ProductsViewModel = viewModel(
-        factory = ProductsViewModelFactory(LocalContext.current)
+fun SearchScreen(
+    navController: NavController,
+    viewModel: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = SearchViewModelFactory(
+            LocalContext.current
+        )
     )
 ) {
 
     val widgets = Widgets()
     val appState = AppStateManager.status.collectAsState().value
+    var text by remember { mutableStateOf(viewModel.textFieldValue) }
 
-    val listOfProducts = viewModel.listOfProducts.collectAsState().value.listProducts
-    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = appState == AppState.LOADING)
-
-//    Log.e("Состояние вью:", appState.toString())
+    val listOfProducts = viewModel.listOfProducts.collectAsState().value.listSearchProducts
 
     Scaffold(
         Modifier.fillMaxSize(),
@@ -81,36 +85,74 @@ fun MainProductsScreen(
                 ),
                 title = {
                     Text(
-                        text = "Продукты",
+                        text = "Поиск",
                         fontFamily = nunitoFontFamily,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 26.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Localized description"
+                        )
+                    }
+                },
             )
         },
     ) { innerPadding ->
-        when (appState) {
-            AppState.LOADING -> widgets.CustomCircularProgressBar()
-            AppState.SUCCESS -> SwipeRefresh(
-                state = swipeRefreshState,
-                onRefresh = {
-                    viewModel.updateProducts()
-                },
-            ) {
-                ScreenBody(
-                    Modifier.padding(innerPadding), navController, listOfProducts, viewModel
-                )
-            }
+        Column(
+            Modifier
+                .padding(innerPadding)
+                .padding(horizontal = 12.dp)
+                .fillMaxSize()
+        ) {
+            Row(Modifier.fillMaxWidth()) {
+                TextField(
+                    value = text,
+                    onValueChange = { newText ->
+                        text = newText
+                        viewModel.textFieldValue = text
+                    },
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .weight(1f),
+                    colors = TextFieldDefaults.textFieldColors(
+                        cursorColor = Color.Transparent,
+                        disabledLabelColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
 
-            AppState.ERROR -> SwipeRefresh(
-                state = swipeRefreshState,
-                onRefresh = {
-                    viewModel.updateProducts()
-                },
-            ) {
-                widgets.EmptyText()
+                    singleLine = true,
+                    placeholder = { Text("Введите запрос") },
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable { viewModel.searchItems() }, Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        contentDescription = "Localized description"
+                    )
+                }
+            }
+            when (appState) {
+                AppState.LOADING -> widgets.CustomCircularProgressBar()
+                AppState.SUCCESS -> ScreenBody(
+                    Modifier.padding(innerPadding),
+                    navController,
+                    listOfProducts,
+                )
+
+                AppState.ERROR -> widgets.EmptyText()
             }
         }
     }
@@ -121,73 +163,20 @@ private fun ScreenBody(
     modifier: Modifier,
     navController: NavController,
     listOfProducts: List<Product>?,
-    viewModel: ProductsViewModel
 ) {
-    Column(modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
-            Box(
-                modifier = Modifier
-                    .height(48.dp)
-                    .width(128.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.primary)
-                    .clickable {
-                        if (ProductManager.currentPage.value.currentPage > 1)
-                            ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage - 1)
-                        viewModel.changePage(false)
-                    }, Alignment.Center
-            ) {
-                Text(
-                    text = "Назад",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .height(48.dp)
-                    .width(128.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.primary)
-                    .clickable {
-                        if (ProductManager.currentPage.value.currentPage < 5) {
-                            ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage + 1)
-                        }
-                        viewModel.changePage(true)
-                    }, Alignment.Center
-            ) {
-                Text(
-                    text = "Вперед",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimary,
-
+    Box(modifier.fillMaxSize()) {
+        LazyColumn(Modifier.padding(horizontal = 12.dp)) {
+            if (listOfProducts != null) {
+                items(listOfProducts) { product ->
+                    ProductCard(
+                        navController = navController, product = product, ProductManager
                     )
-            }
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(Modifier.padding(horizontal = 12.dp)) {
-                if (listOfProducts != null) {
-                    items(listOfProducts) { product ->
-                        ProductCard(
-                            navController = navController, product = product, ProductManager
-                        )
-                    }
                 }
             }
-            FloatingActionButton(
-                onClick = { navController.navigate(Screens.SearchScreen.route) },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(32.dp)
-            ) {
-                Icon(Icons.Filled.Search, "Floating action button.")
-            }
         }
-
     }
 }
+
 
 @Composable
 private fun CustomListItem(

@@ -14,6 +14,18 @@ class SharedPrefManager(context: Context) {
         sharedPreferences.edit().putString("Products$page", json).apply()
     }
 
+    fun saveSearchProducts(listOfProducts: List<Product>) {
+        val gson = Gson()
+        val json = gson.toJson(listOfProducts)
+        sharedPreferences.edit().putString("SearchProducts", json).apply()
+    }
+
+    fun getSearchProducts(): List<Product>? {
+        val json = sharedPreferences.getString("SearchProducts", null)
+        val type = object : TypeToken<List<Product>>() {}.type
+        return Gson().fromJson(json, type)
+    }
+
     fun getProducts(page: Int): List<Product>? {
         val json = sharedPreferences.getString("Products$page", null)
         val type = object : TypeToken<List<Product>>() {}.type
@@ -22,6 +34,10 @@ class SharedPrefManager(context: Context) {
 
     fun clearData() {
         sharedPreferences.edit().clear().apply()
+    }
+
+    fun clearSearchData() {
+        sharedPreferences.edit().remove("SearchProducts").apply()
     }
 
 
