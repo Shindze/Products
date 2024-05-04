@@ -1,6 +1,7 @@
 package com.example.products.viewmodel
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.products.model.SharedPrefManager
@@ -20,6 +21,7 @@ class ProductViewModel(context: Context) : ViewModel() {
 
     init {
         getProducts()
+        Log.e("Вьюмодель два:", listOfProducts.value.listProducts.toString())
     }
 
     private fun getProducts() {

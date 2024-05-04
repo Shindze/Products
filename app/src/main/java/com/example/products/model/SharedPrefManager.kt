@@ -20,6 +20,11 @@ class SharedPrefManager(context: Context) {
         return Gson().fromJson(json, type)
     }
 
+    fun clearKey() {
+        sharedPreferences.edit().clear().apply()
+    }
+
+
 //        fun getQuestionPosition(currentQuestion: Int): Int {
 //            val json = sharedPreferences.getString("questionPosition $currentQuestion", 0.toString())
 //            val type = object : TypeToken<Int>() {}.type
