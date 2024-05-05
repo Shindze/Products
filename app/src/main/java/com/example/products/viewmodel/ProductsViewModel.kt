@@ -10,7 +10,7 @@ import com.example.products.repository.ProductsRepository
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
 import com.example.products.viewmodel.appstate.ProductManager
-import com.example.products.viewmodel.uiState.MainScreenUiState
+import com.example.products.viewmodel.uiState.ProductsUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,9 +22,9 @@ class ProductsViewModel(context: Context) : ViewModel() {
 
     private val repo = ProductsRepository.getRepository()
 
-    private val _listOfProducts: MutableStateFlow<MainScreenUiState> =
-        MutableStateFlow(MainScreenUiState())
-    val listOfProducts: StateFlow<MainScreenUiState> = _listOfProducts.asStateFlow()
+    private val _listOfProducts: MutableStateFlow<ProductsUiState> =
+        MutableStateFlow(ProductsUiState())
+    val listOfProducts: StateFlow<ProductsUiState> = _listOfProducts.asStateFlow()
 
     private val sharedPrefManager = SharedPrefManager(context)
     private var count: Int = 0

@@ -11,7 +11,7 @@ import com.example.products.model.SharedPrefManager
 import com.example.products.repository.ProductsRepository
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
-import com.example.products.viewmodel.uiState.MainScreenUiState
+import com.example.products.viewmodel.uiState.ProductsUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,9 +19,10 @@ import kotlinx.coroutines.launch
 
 class SearchViewModel(context: Context) : ViewModel() {
 
-    private val _listOfProducts: MutableStateFlow<MainScreenUiState> =
-        MutableStateFlow(MainScreenUiState())
-    val listOfProducts: StateFlow<MainScreenUiState> = _listOfProducts.asStateFlow()
+    private val _listOfProducts: MutableStateFlow<ProductsUiState> =
+        MutableStateFlow(ProductsUiState())
+    val listOfProducts: StateFlow<ProductsUiState> = _listOfProducts.asStateFlow()
+
     var textFieldValue by mutableStateOf("")
 
     private val repo = ProductsRepository.getRepository()
@@ -36,7 +37,7 @@ class SearchViewModel(context: Context) : ViewModel() {
         viewModelScope.launch {
             val products = repo.searchProducts(textFieldValue, sharedPrefManager)
 
-            _listOfProducts.value = _listOfProducts.value.copy(listSearchProducts = products)
+            _listOfProducts.value = _listOfProducts.value.copy(listProducts = products)
 
             Log.e("Поиск запрос:", textFieldValue)
             Log.e("Поиск данные:", products.toString())

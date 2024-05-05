@@ -204,7 +204,8 @@ private fun CustomListItem(
             .fillMaxWidth()
             .clickable {
                 productManager.updateCurrentProduct(product.id)
-                navController.navigate(Screens.ProductScreen.route)
+                productManager.updateSearchNavigate(false)
+                navController.navigate(route = Screens.ProductScreen.route)
             }, color = backgroundColor, shape = RoundedCornerShape(16.dp)
     ) {
         Row(

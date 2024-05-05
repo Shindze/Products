@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -72,7 +71,7 @@ fun SearchScreen(
     val appState = AppStateManager.status.collectAsState().value
     var text by remember { mutableStateOf(viewModel.textFieldValue) }
 
-    val listOfProducts = viewModel.listOfProducts.collectAsState().value.listSearchProducts
+    val listOfProducts = viewModel.listOfProducts.collectAsState().value.listProducts
 
     Scaffold(
         Modifier.fillMaxSize(),
@@ -140,10 +139,13 @@ fun SearchScreen(
                     Icon(
                         imageVector = Icons.Filled.Search,
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        contentDescription = "Localized description"
+                        contentDescription = "Поиск"
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             when (appState) {
                 AppState.LOADING -> widgets.CustomCircularProgressBar()
                 AppState.SUCCESS -> ScreenBody(
@@ -164,14 +166,12 @@ private fun ScreenBody(
     navController: NavController,
     listOfProducts: List<Product>?,
 ) {
-    Box(modifier.fillMaxSize()) {
-        LazyColumn(Modifier.padding(horizontal = 12.dp)) {
-            if (listOfProducts != null) {
-                items(listOfProducts) { product ->
-                    ProductCard(
-                        navController = navController, product = product, ProductManager
-                    )
-                }
+    LazyColumn(Modifier.padding(horizontal = 12.dp)) {
+        if (listOfProducts != null) {
+            items(listOfProducts) { product ->
+                ProductCard(
+                    navController = navController, product = product, ProductManager
+                )
             }
         }
     }
@@ -193,7 +193,8 @@ private fun CustomListItem(
             .fillMaxWidth()
             .clickable {
                 productManager.updateCurrentProduct(product.id)
-                navController.navigate(Screens.ProductScreen.route)
+                productManager.updateSearchNavigate(true)
+                navController.navigate(route = Screens.ProductScreen.route)
             }, color = backgroundColor, shape = RoundedCornerShape(16.dp)
     ) {
         Row(

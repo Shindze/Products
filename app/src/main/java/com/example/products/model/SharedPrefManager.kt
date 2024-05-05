@@ -1,6 +1,7 @@
 package com.example.products.model
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -18,6 +19,8 @@ class SharedPrefManager(context: Context) {
         val gson = Gson()
         val json = gson.toJson(listOfProducts)
         sharedPreferences.edit().putString("SearchProducts", json).apply()
+
+        Log.e("Shared сохранение:", listOfProducts.toString())
     }
 
     fun getSearchProducts(): List<Product>? {
