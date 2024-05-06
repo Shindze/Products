@@ -31,7 +31,7 @@ class ProductsRepository(private val apiService: ApiService) {
             sharedPrefManager.saveProducts(products, currentPage)
             products
         } catch (e: Exception) {
-            Log.e("Репо:", "Не получилось загрузить: ${e.message}")
+            Log.e("Репозиторий:", "Не получилось загрузить: ${e.message}")
             AppStateManager.setState(AppState.ERROR)
             null
         }
@@ -51,7 +51,7 @@ class ProductsRepository(private val apiService: ApiService) {
 
             products
         } catch (e: Exception) {
-            Log.e("Репо:", "Не получилось загрузить: ${e.message}")
+            Log.e("Репо:", "Не получилось выполнить поиск: ${e.message}")
             AppStateManager.setState(AppState.ERROR)
             null
         }

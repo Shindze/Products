@@ -193,7 +193,7 @@ private fun ScreenBody(
 private fun CustomListItem(
     navController: NavController,
     product: Product,
-    backgroundColor: Color = MaterialTheme.colorScheme.primary,
+    backgroundColor: Color,
     productManager: ProductManager
 ) {
 
