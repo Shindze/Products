@@ -35,14 +35,15 @@ class SearchViewModel(context: Context) : ViewModel() {
 
     fun searchItems() {
         viewModelScope.launch {
-            val products = repo.searchProducts(textFieldValue, sharedPrefManager)
+            try {
 
-            _listOfProducts.value = _listOfProducts.value.copy(listProducts = products)
+                val products = repo.searchProducts(textFieldValue, sharedPrefManager)
+                _listOfProducts.value = _listOfProducts.value.copy(listProducts = products)
 
-            Log.e("Поиск запрос:", textFieldValue)
-            Log.e("Поиск данные:", products.toString())
-
-            updateAppState(AppState.SUCCESS)
+                updateAppState(AppState.SUCCESS)
+            } catch (e: Exception) {
+                Log.e("SearchViewModel:", "Ошибка при выполнении поиска: ${e.message}")
+            }
         }
     }
 

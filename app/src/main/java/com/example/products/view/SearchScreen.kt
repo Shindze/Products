@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -41,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -109,6 +112,9 @@ fun SearchScreen(
                 .fillMaxSize()
         ) {
             Row(Modifier.fillMaxWidth()) {
+
+                val keyboardController = LocalSoftwareKeyboardController.current
+
                 TextField(
                     value = text,
                     onValueChange = { newText ->
@@ -125,35 +131,34 @@ fun SearchScreen(
                         unfocusedIndicatorColor = Color.Transparent
                     ),
 
+                    keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
+
+                    keyboardActions = KeyboardActions(onNext = {
+                        keyboardController?.hide()
+                        viewModel.searchItems()
+                    }),
+
                     singleLine = true,
                     placeholder = { Text("Введите запрос") },
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.primary)
-                        .clickable { viewModel.searchItems() }, Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        contentDescription = "Поиск"
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             when (appState) {
                 AppState.LOADING -> widgets.CustomCircularProgressBar()
-                AppState.SUCCESS -> ScreenBody(
-                    Modifier.padding(innerPadding),
-                    navController,
-                    listOfProducts,
-                )
+                AppState.SUCCESS ->
 
+                    if (listOfProducts != null) {
+                        if (listOfProducts.isEmpty()) {
+                            widgets.EmptyText()
+                        } else {
+                            ScreenBody(
+                                navController,
+                                listOfProducts,
+                            )
+                        }
+                    }
                 AppState.ERROR -> widgets.EmptyText()
             }
         }
@@ -162,11 +167,10 @@ fun SearchScreen(
 
 @Composable
 private fun ScreenBody(
-    modifier: Modifier,
     navController: NavController,
     listOfProducts: List<Product>?,
 ) {
-    LazyColumn(Modifier.padding(horizontal = 12.dp)) {
+    LazyColumn() {
         if (listOfProducts != null) {
             items(listOfProducts) { product ->
                 ProductCard(

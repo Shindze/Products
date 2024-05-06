@@ -32,6 +32,12 @@ object ProductManager {
             _searchNavigate.value = _searchNavigate.value.copy(isSearch = _isSearch)
         }
     }
+
+    fun updateFilteredState(_isFiltered: Boolean) {
+        if (_searchNavigate.value.isFiltered != _isFiltered) {
+            _searchNavigate.value = _searchNavigate.value.copy(isFiltered = _isFiltered)
+        }
+    }
 }
 
 data class CurrentProductState(
@@ -43,5 +49,6 @@ data class CurrentPageState(
 )
 
 data class SearchNavigateState(
+    val isFiltered: Boolean = false,
     val isSearch: Boolean = false,
 )

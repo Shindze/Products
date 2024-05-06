@@ -64,11 +64,8 @@ fun ProductScreen(
 
     val qurrentProduct = ProductManager.currentProduct.collectAsState().value.currentProduct
 
-    Log.e("Вью два:", viewModel.listOfProducts.collectAsState().value.listProducts!!.toString())
-
     val productsState = viewModel.listOfProducts.collectAsState().value
     val product = productsState.listProducts?.find { it.id == qurrentProduct }
-
 
     Scaffold(
         Modifier.fillMaxSize(),

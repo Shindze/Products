@@ -18,3 +18,5 @@ data class ProductResponse(
     val products: List<Product>,
     val total: Int
 )
+
+typealias CategoriesResponse = List<String>

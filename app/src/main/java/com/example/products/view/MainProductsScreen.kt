@@ -14,12 +14,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -47,17 +51,18 @@ import com.example.products.model.Product
 import com.example.products.navigation.Screens
 import com.example.products.ui.theme.nunitoFontFamily
 import com.example.products.viewmodel.Factory.ProductsViewModelFactory
-import com.example.products.viewmodel.ProductsViewModel
+import com.example.products.viewmodel.ListOfProductsViewModel
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
 import com.example.products.viewmodel.appstate.ProductManager
+import com.example.products.viewmodel.uiState.ProductsUiState
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainProductsScreen(
-    navController: NavController, viewModel: ProductsViewModel = viewModel(
+fun ListOfProductsScreen(
+    navController: NavController, viewModel: ListOfProductsViewModel = viewModel(
         factory = ProductsViewModelFactory(LocalContext.current)
     )
 ) {
@@ -65,10 +70,8 @@ fun MainProductsScreen(
     val widgets = Widgets()
     val appState = AppStateManager.status.collectAsState().value
 
-    val listOfProducts = viewModel.listOfProducts.collectAsState().value.listProducts
+    val listOfResponseData = viewModel.listOfProducts.collectAsState().value
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = appState == AppState.LOADING)
-
-//    Log.e("Состояние вью:", appState.toString())
 
     Scaffold(
         Modifier.fillMaxSize(),
@@ -92,100 +95,182 @@ fun MainProductsScreen(
         },
     ) { innerPadding ->
         when (appState) {
-            AppState.LOADING -> widgets.CustomCircularProgressBar()
+            AppState.LOADING -> ScreenBody(
+                Modifier.padding(innerPadding),
+                navController,
+                listOfResponseData,
+                viewModel,
+                appState,
+                widgets
+            )
+
             AppState.SUCCESS -> SwipeRefresh(
                 state = swipeRefreshState,
                 onRefresh = {
-                    viewModel.updateProducts()
+                    viewModel.updateAllProductsData()
                 },
             ) {
                 ScreenBody(
-                    Modifier.padding(innerPadding), navController, listOfProducts, viewModel
+                    Modifier.padding(innerPadding),
+                    navController,
+                    listOfResponseData,
+                    viewModel,
+                    appState,
+                    widgets
                 )
             }
 
             AppState.ERROR -> SwipeRefresh(
                 state = swipeRefreshState,
                 onRefresh = {
-                    viewModel.updateProducts()
+                    viewModel.updateAllProductsData()
                 },
             ) {
-                widgets.EmptyText()
+                ScreenBody(
+                    modifier = Modifier.padding(innerPadding),
+                    navController = navController,
+                    listOfResponseData = listOfResponseData,
+                    viewModel = viewModel,
+                    appState = appState,
+                    widgets = widgets
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ScreenBody(
+    modifier: Modifier,
+    navController: NavController,
+    listOfResponseData: ProductsUiState,
+    viewModel: ListOfProductsViewModel,
+    appState: AppState,
+    widgets: Widgets
+) {
+    Column(modifier.fillMaxWidth()) {
+        if (appState == AppState.ERROR) {
+            NavigationButton(viewModel)
+            Spacer(modifier = Modifier.height(12.dp))
+            RowOfCategories(viewModel, listOfResponseData)
+            widgets.EmptyText()
+        } else if (appState == AppState.LOADING) {
+            NavigationButton(viewModel)
+            Spacer(modifier = Modifier.height(12.dp))
+            RowOfCategories(viewModel, listOfResponseData)
+            widgets.CustomCircularProgressBar()
+        } else {
+            NavigationButton(viewModel)
+            Spacer(modifier = Modifier.height(12.dp))
+            RowOfCategories(viewModel, listOfResponseData)
+            ListOfProducts(listOfResponseData, navController)
+        }
+    }
+}
+
+@Composable
+private fun NavigationButton(viewModel: ListOfProductsViewModel) {
+    Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
+        Box(
+            modifier = Modifier
+                .height(48.dp)
+                .width(128.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable {
+                    if (ProductManager.currentPage.value.currentPage > 1) ProductManager.updateCurrentPage(
+                        ProductManager.currentPage.value.currentPage - 1
+                    )
+                    viewModel.changePage(false)
+                }, Alignment.Center
+        ) {
+            Text(
+                text = "Назад",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+        Box(
+            modifier = Modifier
+                .height(48.dp)
+                .width(128.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable {
+                    if (ProductManager.currentPage.value.currentPage < 5) {
+                        ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage + 1)
+                    }
+                    viewModel.changePage(true)
+                }, Alignment.Center
+        ) {
+            Text(
+                text = "Вперед",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RowOfCategories(
+    viewModel: ListOfProductsViewModel, listOfResponseData: ProductsUiState
+) {
+    LazyRow(Modifier.padding(start = 4.dp)) {
+        if (listOfResponseData.listCategories != null) {
+            items(listOfResponseData.listCategories) { category ->
+                val isSelected = viewModel.listOfProducts.value.selectedCategoriesToChipState?.get(
+                    category
+                ) ?: false
+                Spacer(modifier = Modifier.width(8.dp))
+                FilterChip(
+                    onClick = {
+                        viewModel.setFilterChipState(!isSelected, category)
+                    },
+                    label = {
+                        Text(category)
+                    },
+                    selected = isSelected,
+                    leadingIcon = if (isSelected) {
+                        {
+                            Icon(
+                                imageVector = Icons.Filled.Done,
+                                contentDescription = "Done icon",
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ScreenBody(
-    modifier: Modifier,
-    navController: NavController,
-    listOfProducts: List<Product>?,
-    viewModel: ProductsViewModel
-) {
-    Column(modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
-            Box(
-                modifier = Modifier
-                    .height(48.dp)
-                    .width(128.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.primary)
-                    .clickable {
-                        if (ProductManager.currentPage.value.currentPage > 1)
-                            ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage - 1)
-                        viewModel.changePage(false)
-                    }, Alignment.Center
-            ) {
-                Text(
-                    text = "Назад",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .height(48.dp)
-                    .width(128.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.primary)
-                    .clickable {
-                        if (ProductManager.currentPage.value.currentPage < 5) {
-                            ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage + 1)
-                        }
-                        viewModel.changePage(true)
-                    }, Alignment.Center
-            ) {
-                Text(
-                    text = "Вперед",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimary,
-
+private fun ListOfProducts(listOfResponseData: ProductsUiState, navController: NavController) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.padding(horizontal = 12.dp)) {
+            if (listOfResponseData.listProducts != null) {
+                items(listOfResponseData.listProducts) { product ->
+                    ProductCard(
+                        navController = navController, product = product, ProductManager
                     )
-            }
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(Modifier.padding(horizontal = 12.dp)) {
-                if (listOfProducts != null) {
-                    items(listOfProducts) { product ->
-                        ProductCard(
-                            navController = navController, product = product, ProductManager
-                        )
-                    }
                 }
             }
-            FloatingActionButton(
-                onClick = { navController.navigate(Screens.SearchScreen.route) },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(32.dp)
-            ) {
-                Icon(Icons.Filled.Search, "Floating action button.")
-            }
         }
-
+        FloatingActionButton(
+            onClick = { navController.navigate(Screens.SearchScreen.route) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(32.dp)
+        ) {
+            Icon(Icons.Filled.Search, "Floating action button.")
+        }
     }
 }
 
@@ -196,9 +281,7 @@ private fun CustomListItem(
     backgroundColor: Color,
     productManager: ProductManager
 ) {
-
     Spacer(modifier = Modifier.height(12.dp))
-
     Surface(
         modifier = Modifier
             .fillMaxWidth()

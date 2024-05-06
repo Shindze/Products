@@ -2,7 +2,9 @@ package com.example.products.view
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,11 +34,12 @@ class Widgets() {
 
     @Composable
     fun EmptyText() {
+        Spacer(modifier = Modifier.height(64.dp))
         LazyColumn(
             Modifier
                 .padding(horizontal = 24.dp)
                 .fillMaxSize(),
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
             items(1) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {

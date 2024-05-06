@@ -16,9 +16,7 @@ object AppStateManager {
     val status: StateFlow<AppState> = _status.asStateFlow()
 
     fun setState(state: AppState) {
-
-        Log.e("Состояние изменено:", state.toString())
-
+        Log.e("AppState:", "Состояние изменено: $state")
         _status.value = state
     }
 }
