@@ -67,6 +67,8 @@ fun ProductScreen(
     val productsState = viewModel.listOfProducts.collectAsState().value
     val product = productsState.listProducts?.find { it.id == qurrentProduct }
 
+    Log.e("ProductScreen:", "Пересборка вью")
+
     Scaffold(
         Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,

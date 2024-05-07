@@ -11,7 +11,7 @@ import com.example.products.model.SharedPrefManager
 import com.example.products.repository.ProductsRepository
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
-import com.example.products.viewmodel.uiState.ProductsUiState
+import com.example.products.viewmodel.uiState.SearchUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,9 +19,9 @@ import kotlinx.coroutines.launch
 
 class SearchViewModel(context: Context) : ViewModel() {
 
-    private val _listOfProducts: MutableStateFlow<ProductsUiState> =
-        MutableStateFlow(ProductsUiState())
-    val listOfProducts: StateFlow<ProductsUiState> = _listOfProducts.asStateFlow()
+    private val _listOfProducts: MutableStateFlow<SearchUiState> =
+        MutableStateFlow(SearchUiState())
+    val listOfProducts: StateFlow<SearchUiState> = _listOfProducts.asStateFlow()
 
     var textFieldValue by mutableStateOf("")
 

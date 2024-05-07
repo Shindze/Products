@@ -125,7 +125,6 @@ fun SearchScreen(
                         .clip(RoundedCornerShape(16.dp))
                         .weight(1f),
                     colors = TextFieldDefaults.textFieldColors(
-                        cursorColor = Color.Transparent,
                         disabledLabelColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent
@@ -153,7 +152,7 @@ fun SearchScreen(
                         if (listOfProducts.isEmpty()) {
                             widgets.EmptyText()
                         } else {
-                            ScreenBody(
+                            SearchScreenBody(
                                 navController,
                                 listOfProducts,
                             )
@@ -166,7 +165,7 @@ fun SearchScreen(
 }
 
 @Composable
-private fun ScreenBody(
+private fun SearchScreenBody(
     navController: NavController,
     listOfProducts: List<Product>?,
 ) {

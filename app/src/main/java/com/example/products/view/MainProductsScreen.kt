@@ -1,5 +1,6 @@
 package com.example.products.view
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
@@ -33,6 +35,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,6 +78,8 @@ fun ListOfProductsScreen(
     val listOfResponseData = viewModel.listOfProducts.collectAsState().value
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = appState == AppState.LOADING)
 
+    Log.e("ListOfProductsScreen:", "Пересборка вью")
+
     Scaffold(
         Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -94,8 +101,13 @@ fun ListOfProductsScreen(
             )
         },
     ) { innerPadding ->
-        when (appState) {
-            AppState.LOADING -> ScreenBody(
+        SwipeRefresh(
+            state = swipeRefreshState,
+            onRefresh = {
+                viewModel.updateAllProductsData()
+            },
+        ) {
+            ScreenBody(
                 Modifier.padding(innerPadding),
                 navController,
                 listOfResponseData,
@@ -103,43 +115,10 @@ fun ListOfProductsScreen(
                 appState,
                 widgets
             )
-
-            AppState.SUCCESS -> SwipeRefresh(
-                state = swipeRefreshState,
-                onRefresh = {
-                    viewModel.updateAllProductsData()
-                },
-            ) {
-                ScreenBody(
-                    Modifier.padding(innerPadding),
-                    navController,
-                    listOfResponseData,
-                    viewModel,
-                    appState,
-                    widgets
-                )
-            }
-
-            AppState.ERROR -> SwipeRefresh(
-                state = swipeRefreshState,
-                onRefresh = {
-                    viewModel.updateAllProductsData()
-                },
-            ) {
-                ScreenBody(
-                    modifier = Modifier.padding(innerPadding),
-                    navController = navController,
-                    listOfResponseData = listOfResponseData,
-                    viewModel = viewModel,
-                    appState = appState,
-                    widgets = widgets
-                )
-            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ScreenBody(
     modifier: Modifier,
@@ -147,24 +126,15 @@ private fun ScreenBody(
     listOfResponseData: ProductsUiState,
     viewModel: ListOfProductsViewModel,
     appState: AppState,
-    widgets: Widgets
-) {
+    widgets: Widgets,
+
+    ) {
     Column(modifier.fillMaxWidth()) {
-        if (appState == AppState.ERROR) {
-            NavigationButton(viewModel)
-            Spacer(modifier = Modifier.height(12.dp))
-            RowOfCategories(viewModel, listOfResponseData)
-            widgets.EmptyText()
-        } else if (appState == AppState.LOADING) {
-            NavigationButton(viewModel)
-            Spacer(modifier = Modifier.height(12.dp))
-            RowOfCategories(viewModel, listOfResponseData)
-            widgets.CustomCircularProgressBar()
-        } else {
-            NavigationButton(viewModel)
-            Spacer(modifier = Modifier.height(12.dp))
-            RowOfCategories(viewModel, listOfResponseData)
-            ListOfProducts(listOfResponseData, navController)
+        RowOfCategories(viewModel, listOfResponseData)
+        when (appState) {
+            AppState.LOADING -> widgets.CustomCircularProgressBar()
+            AppState.SUCCESS -> ListOfProducts(listOfResponseData, navController, viewModel)
+            AppState.ERROR -> widgets.EmptyText()
         }
     }
 }
@@ -252,24 +222,42 @@ private fun RowOfCategories(
 }
 
 @Composable
-private fun ListOfProducts(listOfResponseData: ProductsUiState, navController: NavController) {
+private fun ListOfProducts(
+    listOfResponseData: ProductsUiState,
+    navController: NavController,
+    viewModel: ListOfProductsViewModel
+) {
+
+    val scrollState = rememberLazyListState()
+
+    val showButton = remember {
+        derivedStateOf {
+            scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(Modifier.padding(horizontal = 12.dp)) {
+        LazyColumn(state = scrollState, modifier = Modifier.padding(horizontal = 12.dp)) {
             if (listOfResponseData.listProducts != null) {
                 items(listOfResponseData.listProducts) { product ->
-                    ProductCard(
-                        navController = navController, product = product, ProductManager
-                    )
+                    ProductCard(navController = navController, product = product, ProductManager)
                 }
             }
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+                NavigationButton(viewModel)
+            }
         }
-        FloatingActionButton(
-            onClick = { navController.navigate(Screens.SearchScreen.route) },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(32.dp)
-        ) {
-            Icon(Icons.Filled.Search, "Floating action button.")
+
+        if (showButton.value) {
+            FloatingActionButton(
+                onClick = { navController.navigate(Screens.SearchScreen.route) },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(32.dp)
+            ) {
+                Icon(Icons.Filled.Search, contentDescription = "Search")
+            }
         }
     }
 }
@@ -334,12 +322,12 @@ private fun CustomListItem(
 
 @Composable
 private fun ProductCard(
-    navController: NavController, product: Product, ProductManager: ProductManager
+    navController: NavController, product: Product, productManager: ProductManager
 ) {
     CustomListItem(
         navController = navController,
         product = product,
         backgroundColor = MaterialTheme.colorScheme.primary,
-        ProductManager
+        productManager
     )
 }

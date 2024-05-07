@@ -30,6 +30,7 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
     private var count: Int = 0
 
     init {
+        Log.e("ProductViewModel INIT", "INIT")
         getProducts()
         getCategories()
     }
@@ -69,8 +70,14 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
         val updatedSelectedCategories =
             _listOfProducts.value.selectedCategoriesToChipState?.toMutableMap() ?: mutableMapOf()
 
+        val listCategories = _listOfProducts.value.listCategories?.toMutableList()
+
         updatedSelectedCategories.clear()
         updatedSelectedCategories[category] = isPressed
+
+        listCategories?.remove(category)
+        listCategories?.add(0, category)
+
 
         _listOfProducts.value = _listOfProducts.value.copy(
             selectedCategoriesToChipState = updatedSelectedCategories,
@@ -148,7 +155,6 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
     private fun updateAppState(state: AppState) {
         AppStateManager.setState(state)
     }
-
 
     override fun onCleared() {
         super.onCleared()
