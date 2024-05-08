@@ -26,7 +26,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,29 +42,27 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.products.model.Product
 import com.example.products.ui.theme.nunitoFontFamily
+import com.example.products.viewmodel.DetailedProductViewModel
 import com.example.products.viewmodel.Factory.ProductViewModelFactory
-import com.example.products.viewmodel.ProductViewModel
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
-import com.example.products.viewmodel.appstate.ProductManager
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductScreen(
     navController: NavController,
-    viewModel: ProductViewModel = viewModel(
+    viewModel: DetailedProductViewModel = viewModel(
         factory = ProductViewModelFactory(LocalContext.current)
-    )
+    ),
+    productId: String,
 ) {
 
-    val widgets = Widgets()
-    val appState = AppStateManager.status.collectAsState().value
-
-    val qurrentProduct = ProductManager.currentProduct.collectAsState().value.currentProduct
+    val widgets = Widgets() // Удолить
+    val appState = AppStateManager.status.collectAsState().value // Избавиться
 
     val productsState = viewModel.listOfProducts.collectAsState().value
-    val product = productsState.listProducts?.find { it.id == qurrentProduct }
+    val product = productsState.listProducts?.find { it.id == productId.toInt() }
 
     Log.e("ProductScreen:", "Пересборка вью")
 

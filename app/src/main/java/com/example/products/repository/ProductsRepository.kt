@@ -1,6 +1,7 @@
 package com.example.products.repository
 
 import android.util.Log
+import coil.network.HttpException
 import com.example.products.model.Product
 import com.example.products.model.SharedPrefManager
 import com.example.products.network.ApiClient
@@ -8,6 +9,7 @@ import com.example.products.network.ApiService
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
 import com.example.products.viewmodel.appstate.ProductManager
+import retrofit2.http.HTTP
 
 class ProductsRepository(private val apiService: ApiService) {
     suspend fun fetchCacheProducts(
@@ -66,7 +68,7 @@ class ProductsRepository(private val apiService: ApiService) {
                 products
             }
 
-        } catch (e: Exception) {
+        } catch (e: HttpException) {
             Log.e("Repository:", "Ошибка при загрузке продуктов: ${e.message}")
             AppStateManager.setState(AppState.ERROR)
             null
@@ -87,7 +89,7 @@ class ProductsRepository(private val apiService: ApiService) {
             sharedPrefManager.saveCategories(categories)
 
             categories
-        } catch (e: Exception) {
+        } catch (e: HttpException) {
             Log.e("Repository:", "Ошибка при загрузке категорий: ${e.message}")
             AppStateManager.setState(AppState.ERROR)
             null
@@ -107,7 +109,7 @@ class ProductsRepository(private val apiService: ApiService) {
             sharedPrefManager.saveSearchProducts(products)
 
             products
-        } catch (e: Exception) {
+        } catch (e: HttpException) {
             Log.e("Repository:", "Ошибка при выполнении поиска: ${e.message}")
             AppStateManager.setState(AppState.ERROR)
             null

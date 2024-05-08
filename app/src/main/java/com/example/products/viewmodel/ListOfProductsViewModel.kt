@@ -36,7 +36,7 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
     }
 
     private fun getProducts(numberOfPage: Int = 0, category: String = "") {
-        viewModelScope.launch(Dispatchers.Main) {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val productsResponse =
                     repo.fetchCacheProducts(numberOfPage, sharedPrefManager, category)
@@ -49,7 +49,7 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
     }
 
     private fun getCategories() {
-        viewModelScope.launch(Dispatchers.Main) {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val categoriesResponse = repo.fetchCacheCategories(sharedPrefManager)
                 processingFetchedCategories(categoriesResponse)

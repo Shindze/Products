@@ -12,6 +12,7 @@ import com.example.products.repository.ProductsRepository
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
 import com.example.products.viewmodel.uiState.SearchUiState
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,14 +30,9 @@ class SearchViewModel(context: Context) : ViewModel() {
 
     private val sharedPrefManager = SharedPrefManager(context)
 
-    init {
-        sharedPrefManager.clearSearchData()
-    }
-
     fun searchItems() {
         viewModelScope.launch {
             try {
-
                 val products = repo.searchProducts(textFieldValue, sharedPrefManager)
                 _listOfProducts.value = _listOfProducts.value.copy(listProducts = products)
 
@@ -49,5 +45,12 @@ class SearchViewModel(context: Context) : ViewModel() {
 
     private fun updateAppState(state: AppState) {
         AppStateManager.setState(state)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        viewModelScope.cancel()
+
+        sharedPrefManager.clearSearchData()
     }
 }

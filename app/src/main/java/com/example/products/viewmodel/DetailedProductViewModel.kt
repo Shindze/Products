@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class ProductViewModel(context: Context) : ViewModel() {
+class DetailedProductViewModel(context: Context) : ViewModel() {
 
     private val _listOfProducts: MutableStateFlow<ProductUiState> =
         MutableStateFlow(ProductUiState())
@@ -20,24 +20,19 @@ class ProductViewModel(context: Context) : ViewModel() {
 
     private val sharedPrefManager = SharedPrefManager(context)
 
-    private var isSearch: Boolean = ProductManager.searchNavigate.value.isSearch
-
     init {
-        Log.e("ProductViewModel INIT:", "INIT: IsSearch $isSearch")
-        getProducts(isSearch)
+        getProducts()
     }
 
-    private fun getProducts(isSearch: Boolean) {
-
+    private fun getProducts() {
         Log.e("ProductViewModel:", "getProducts зашел")
-
         try {
             val products = when {
                 ProductManager.searchNavigate.value.isFiltered -> {
                     sharedPrefManager.getFilteredProducts()
                 }
 
-                sharedPrefManager.getSearchProducts().isNullOrEmpty() || !isSearch -> {
+                sharedPrefManager.getSearchProducts().isNullOrEmpty() -> {
                     sharedPrefManager.getProducts(ProductManager.currentPage.value.currentPage)
                 }
 

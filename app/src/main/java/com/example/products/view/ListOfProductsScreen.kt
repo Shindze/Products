@@ -37,7 +37,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -122,7 +121,7 @@ fun ListOfProductsScreen(
 @Composable
 private fun ScreenBody(
     modifier: Modifier,
-    navController: NavController,
+    navigation: NavController,
     listOfResponseData: ProductsUiState,
     viewModel: ListOfProductsViewModel,
     appState: AppState,
@@ -133,7 +132,7 @@ private fun ScreenBody(
         RowOfCategories(viewModel, listOfResponseData)
         when (appState) {
             AppState.LOADING -> widgets.CustomCircularProgressBar()
-            AppState.SUCCESS -> ListOfProducts(listOfResponseData, navController, viewModel)
+            AppState.SUCCESS -> ListOfProducts(listOfResponseData, navigation, viewModel)
             AppState.ERROR -> widgets.EmptyText()
         }
     }
@@ -224,7 +223,7 @@ private fun RowOfCategories(
 @Composable
 private fun ListOfProducts(
     listOfResponseData: ProductsUiState,
-    navController: NavController,
+    navigation: NavController,
     viewModel: ListOfProductsViewModel
 ) {
 
@@ -240,7 +239,7 @@ private fun ListOfProducts(
         LazyColumn(state = scrollState, modifier = Modifier.padding(horizontal = 12.dp)) {
             if (listOfResponseData.listProducts != null) {
                 items(listOfResponseData.listProducts) { product ->
-                    ProductCard(navController = navController, product = product, ProductManager)
+                    ProductCard(navigation, product = product, ProductManager)
                 }
             }
             item {
@@ -251,7 +250,7 @@ private fun ListOfProducts(
 
         if (showButton.value) {
             FloatingActionButton(
-                onClick = { navController.navigate(Screens.SearchScreen.route) },
+                onClick = { navigation.navigate(Screens.SearchScreen.route) },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(32.dp)
@@ -264,7 +263,7 @@ private fun ListOfProducts(
 
 @Composable
 private fun CustomListItem(
-    navController: NavController,
+    navigation: NavController,
     product: Product,
     backgroundColor: Color,
     productManager: ProductManager
@@ -274,9 +273,9 @@ private fun CustomListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                productManager.updateCurrentProduct(product.id)
-                productManager.updateSearchNavigate(false)
-                navController.navigate(route = Screens.ProductScreen.route)
+                navigation.navigate(
+                    route = "${Screens.ProductScreen.route}/${product.id}"
+                )
             }, color = backgroundColor, shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -325,7 +324,7 @@ private fun ProductCard(
     navController: NavController, product: Product, productManager: ProductManager
 ) {
     CustomListItem(
-        navController = navController,
+        navController,
         product = product,
         backgroundColor = MaterialTheme.colorScheme.primary,
         productManager

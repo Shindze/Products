@@ -1,8 +1,7 @@
 package com.example.products.view
 
-import androidx.compose.foundation.background
+import android.util.Log
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,7 +18,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -51,13 +49,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.products.model.Product
-import com.example.products.navigation.Screens
 import com.example.products.ui.theme.nunitoFontFamily
-import com.example.products.viewmodel.Factory.SearchViewModelFactory
 import com.example.products.viewmodel.SearchViewModel
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
-import com.example.products.viewmodel.appstate.ProductManager
+import com.example.products.viewmodel.Factory.SearchViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +68,10 @@ fun SearchScreen(
 
     val widgets = Widgets()
     val appState = AppStateManager.status.collectAsState().value
+
     var text by remember { mutableStateOf(viewModel.textFieldValue) }
+
+    Log.e("SearchScreen:", "Пересборка вью")
 
     val listOfProducts = viewModel.listOfProducts.collectAsState().value.listProducts
 
@@ -158,6 +157,7 @@ fun SearchScreen(
                             )
                         }
                     }
+
                 AppState.ERROR -> widgets.EmptyText()
             }
         }
@@ -172,8 +172,8 @@ private fun SearchScreenBody(
     LazyColumn() {
         if (listOfProducts != null) {
             items(listOfProducts) { product ->
-                ProductCard(
-                    navController = navController, product = product, ProductManager
+                SearchProductCard(
+                    navController = navController, product = product
                 )
             }
         }
@@ -186,7 +186,6 @@ private fun CustomListItem(
     navController: NavController,
     product: Product,
     backgroundColor: Color = MaterialTheme.colorScheme.primary,
-    productManager: ProductManager
 ) {
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -195,9 +194,9 @@ private fun CustomListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                productManager.updateCurrentProduct(product.id)
-                productManager.updateSearchNavigate(true)
-                navController.navigate(route = Screens.ProductScreen.route)
+                navController.navigate(
+                    route = "Product_screen/${product.id}"
+                )
             }, color = backgroundColor, shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -242,13 +241,12 @@ private fun CustomListItem(
 }
 
 @Composable
-private fun ProductCard(
-    navController: NavController, product: Product, ProductManager: ProductManager
+private fun SearchProductCard(
+    navController: NavController, product: Product
 ) {
     CustomListItem(
         navController = navController,
         product = product,
         backgroundColor = MaterialTheme.colorScheme.primary,
-        ProductManager
     )
 }
