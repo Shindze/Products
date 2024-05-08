@@ -49,11 +49,12 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.products.model.Product
+import com.example.products.navigation.Screens
 import com.example.products.ui.theme.nunitoFontFamily
+import com.example.products.viewmodel.Factory.SearchViewModelFactory
 import com.example.products.viewmodel.SearchViewModel
 import com.example.products.viewmodel.appstate.AppState
 import com.example.products.viewmodel.appstate.AppStateManager
-import com.example.products.viewmodel.Factory.SearchViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -196,7 +197,11 @@ private fun CustomListItem(
             .clickable {
                 navController.navigate(
                     route = "Product_screen/${product.id}"
-                )
+                ) {
+                    popUpTo(Screens.SearchScreen.route) {
+                        inclusive = false
+                    }
+                }
             }, color = backgroundColor, shape = RoundedCornerShape(16.dp)
     ) {
         Row(

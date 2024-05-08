@@ -239,7 +239,7 @@ private fun ListOfProducts(
         LazyColumn(state = scrollState, modifier = Modifier.padding(horizontal = 12.dp)) {
             if (listOfResponseData.listProducts != null) {
                 items(listOfResponseData.listProducts) { product ->
-                    ProductCard(navigation, product = product, ProductManager)
+                    ProductCard(navigation, product = product)
                 }
             }
             item {
@@ -261,12 +261,12 @@ private fun ListOfProducts(
     }
 }
 
+
 @Composable
 private fun CustomListItem(
     navigation: NavController,
     product: Product,
     backgroundColor: Color,
-    productManager: ProductManager
 ) {
     Spacer(modifier = Modifier.height(12.dp))
     Surface(
@@ -274,8 +274,12 @@ private fun CustomListItem(
             .fillMaxWidth()
             .clickable {
                 navigation.navigate(
-                    route = "${Screens.ProductScreen.route}/${product.id}"
-                )
+                    route = "${Screens.ProductScreen.route}/${product.id}",
+                ) {
+                    popUpTo(Screens.MainScren.route) {
+                        inclusive = false
+                    }
+                }
             }, color = backgroundColor, shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -321,12 +325,11 @@ private fun CustomListItem(
 
 @Composable
 private fun ProductCard(
-    navController: NavController, product: Product, productManager: ProductManager
+    navController: NavController, product: Product
 ) {
     CustomListItem(
         navController,
         product = product,
         backgroundColor = MaterialTheme.colorScheme.primary,
-        productManager
     )
 }

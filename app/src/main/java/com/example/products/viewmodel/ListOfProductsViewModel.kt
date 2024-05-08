@@ -1,7 +1,9 @@
 package com.example.products.viewmodel
 
 import android.content.Context
+import android.net.ConnectivityManager
 import android.util.Log
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.products.model.Product
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
 
 class ListOfProductsViewModel(context: Context) : ViewModel() {
 
@@ -34,6 +37,8 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
         getProducts()
         getCategories()
     }
+
+
 
     private fun getProducts(numberOfPage: Int = 0, category: String = "") {
         viewModelScope.launch(Dispatchers.IO) {
