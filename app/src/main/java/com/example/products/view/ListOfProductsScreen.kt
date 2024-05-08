@@ -231,7 +231,7 @@ private fun ListOfProducts(
 
     val showButton = remember {
         derivedStateOf {
-            scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0
+            scrollState.canScrollForward
         }
     }
 

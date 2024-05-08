@@ -170,7 +170,7 @@ private fun SearchScreenBody(
     navController: NavController,
     listOfProducts: List<Product>?,
 ) {
-    LazyColumn() {
+    LazyColumn {
         if (listOfProducts != null) {
             items(listOfProducts) { product ->
                 SearchProductCard(
@@ -180,7 +180,6 @@ private fun SearchScreenBody(
         }
     }
 }
-
 
 @Composable
 private fun CustomListItem(
