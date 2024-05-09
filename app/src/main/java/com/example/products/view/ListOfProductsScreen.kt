@@ -320,7 +320,7 @@ private fun CustomListItem(
 }
 
 @Composable
-fun SkeletonListItem() {
+private fun SkeletonListItem() {
     val shimmerColors = listOf(
         Color.LightGray.copy(alpha = 0.3f), Color.LightGray, Color.LightGray.copy(alpha = 0.3f)
     )

@@ -101,6 +101,7 @@ fun ProductScreen(
             }
 
             AppState.ERROR -> widgets.EmptyText()
+            AppState.INITIAL -> Unit
         }
     }
 }

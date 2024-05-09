@@ -30,6 +30,9 @@ class SearchViewModel(context: Context) : ViewModel() {
     private val sharedPrefManager = SharedPrefManager(context)
 
     fun searchItems() {
+
+        updateAppState(AppState.LOADING)
+
         viewModelScope.launch {
             try {
                 val products = repo.searchProducts(textFieldValue, sharedPrefManager)

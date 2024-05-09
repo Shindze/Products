@@ -26,6 +26,9 @@ class DetailedProductViewModel(context: Context) : ViewModel() {
     }
 
     private fun getProducts() {
+
+        updateAppState(AppState.LOADING)
+
         Log.e("ProductViewModel:", "getProducts зашел")
         try {
             val products = when {
@@ -52,6 +55,7 @@ class DetailedProductViewModel(context: Context) : ViewModel() {
 
         } catch (e: Exception) {
             Log.e("ProductViewModel:", "Ошибка при получении продукта: ${e.message}")
+            updateAppState(AppState.ERROR)
         }
     }
 

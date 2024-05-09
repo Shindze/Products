@@ -9,10 +9,10 @@ data class ProductsUiState(
     val selectedCategoriesToChipState: Map<String, Boolean>? = emptyMap(),
     val selectedCategory: String = "",
 
-    val appState: AppState = AppState.LOADING
+    val appState: AppState = AppState.INITIAL
 )
 
 enum class AppState {
-    LOADING, SUCCESS, ERROR
+    INITIAL, LOADING, SUCCESS, ERROR
 }
 

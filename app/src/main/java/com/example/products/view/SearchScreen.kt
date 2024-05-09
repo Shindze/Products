@@ -1,7 +1,14 @@
 package com.example.products.view
 
-import android.util.Log
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,6 +45,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -66,12 +75,9 @@ fun SearchScreen(
     )
 ) {
 
-    val widgets = Widgets()
     val appState = viewModel.listOfProducts.collectAsState().value.appState
 
     var text by remember { mutableStateOf(viewModel.textFieldValue) }
-
-    Log.e("SearchScreen:", "Пересборка вью")
 
     val listOfProducts = viewModel.listOfProducts.collectAsState().value.listProducts
 
@@ -111,9 +117,7 @@ fun SearchScreen(
                 .fillMaxSize()
         ) {
             Row(Modifier.fillMaxWidth()) {
-
                 val keyboardController = LocalSoftwareKeyboardController.current
-
                 TextField(
                     value = text,
                     onValueChange = { newText ->
@@ -140,41 +144,61 @@ fun SearchScreen(
                     placeholder = { Text("Введите запрос") },
                 )
             }
-
             Spacer(modifier = Modifier.height(12.dp))
-
-            when (appState) {
-                AppState.SUCCESS ->
-
-                    if (listOfProducts != null) {
-                        if (listOfProducts.isEmpty()) {
-                            widgets.EmptyText()
-                        } else {
-                            SearchScreenBody(
-                                navController,
-                                listOfProducts,
-                            )
-                        }
-                    }
-
-                AppState.ERROR -> widgets.EmptyText()
-                AppState.LOADING -> widgets.CustomCircularProgressBar()
-            }
+            SearchScreenBody(
+                navController, listOfProducts, appState
+            )
         }
     }
 }
+
 
 @Composable
 private fun SearchScreenBody(
     navController: NavController,
     listOfProducts: List<Product>?,
+    appState: AppState,
 ) {
-    LazyColumn {
-        if (listOfProducts != null) {
+
+    LazyColumn(Modifier.fillMaxSize()) {
+
+        if (appState == AppState.LOADING) {
+            items(20) {
+                SkeletonListItemSearch()
+            }
+        }
+
+        if (appState == AppState.SUCCESS && listOfProducts.isNullOrEmpty()) {
+            item {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        text = "Упс, тут ничего нет :(",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+            }
+        }
+
+        if (!listOfProducts.isNullOrEmpty()) {
             items(listOfProducts) { product ->
                 SearchProductCard(
                     navController = navController, product = product
                 )
+            }
+        } else if (appState == AppState.ERROR) {
+            item {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        text = "Упс, тут ничего нет :(",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
             }
         }
     }
@@ -252,4 +276,69 @@ private fun SearchProductCard(
         product = product,
         backgroundColor = MaterialTheme.colorScheme.primary,
     )
+}
+
+@Composable
+fun SkeletonListItemSearch() {
+    val shimmerColors = listOf(
+        Color.LightGray.copy(alpha = 0.3f), Color.LightGray, Color.LightGray.copy(alpha = 0.3f)
+    )
+    val transition = rememberInfiniteTransition()
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f, targetValue = 1000f, animationSpec = infiniteRepeatable(
+            tween(durationMillis = 1200, easing = LinearEasing), RepeatMode.Restart
+        ), label = ""
+    )
+
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(x = translateAnim.value, y = translateAnim.value)
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = false) {},
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(brush)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(14.dp)
+                        .background(brush)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(14.dp)
+                        .background(brush)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(16.dp)
+                    .background(brush)
+            )
+        }
+    }
 }
