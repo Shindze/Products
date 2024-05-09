@@ -9,9 +9,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.products.model.SharedPrefManager
 import com.example.products.repository.ProductsRepository
-import com.example.products.viewmodel.appstate.AppState
-import com.example.products.viewmodel.appstate.AppStateManager
-import com.example.products.viewmodel.uiState.SearchUiState
+import com.example.products.viewmodel.uiState.AppState
+import com.example.products.viewmodel.uiState.ProductsUiState
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,9 +19,9 @@ import kotlinx.coroutines.launch
 
 class SearchViewModel(context: Context) : ViewModel() {
 
-    private val _listOfProducts: MutableStateFlow<SearchUiState> =
-        MutableStateFlow(SearchUiState())
-    val listOfProducts: StateFlow<SearchUiState> = _listOfProducts.asStateFlow()
+    private val _listOfProducts: MutableStateFlow<ProductsUiState> =
+        MutableStateFlow(ProductsUiState())
+    val listOfProducts: StateFlow<ProductsUiState> = _listOfProducts.asStateFlow()
 
     var textFieldValue by mutableStateOf("")
 
@@ -34,7 +33,10 @@ class SearchViewModel(context: Context) : ViewModel() {
         viewModelScope.launch {
             try {
                 val products = repo.searchProducts(textFieldValue, sharedPrefManager)
-                _listOfProducts.value = _listOfProducts.value.copy(listProducts = products)
+                if (products != null) {
+                    _listOfProducts.value =
+                        _listOfProducts.value.copy(listProducts = products.toMutableList())
+                }
 
                 updateAppState(AppState.SUCCESS)
             } catch (e: Exception) {
@@ -43,8 +45,10 @@ class SearchViewModel(context: Context) : ViewModel() {
         }
     }
 
-    private fun updateAppState(state: AppState) {
-        AppStateManager.setState(state)
+    private fun updateAppState(newState: AppState) {
+        _listOfProducts.value = _listOfProducts.value.copy(
+            appState = newState
+        )
     }
 
     override fun onCleared() {

@@ -6,24 +6,53 @@ import com.example.products.model.Product
 import com.example.products.model.SharedPrefManager
 import com.example.products.network.ApiClient
 import com.example.products.network.ApiService
-import com.example.products.viewmodel.appstate.AppState
-import com.example.products.viewmodel.appstate.AppStateManager
-import com.example.products.viewmodel.appstate.ProductManager
-import retrofit2.http.HTTP
 
 class ProductsRepository(private val apiService: ApiService) {
+
+    private val cachedAllProductsList: MutableList<Product> = mutableListOf()
+    private var total: Int = 0
+
     suspend fun fetchCacheProducts(
         skip: Int = 0, sharedPrefManager: SharedPrefManager, category: String
     ): List<Product>? {
 
-        val currentPage = ProductManager.currentPage.value.currentPage
-        val cachedProducts = sharedPrefManager.getProducts(currentPage)
+        val cachedProducts = sharedPrefManager.getAllProducts()
+
+        if (cachedProducts != null) {
+            Log.e("fetchCacheProducts:", "Кэш: ${cachedProducts.size} Пропускаем: ${skip}")
+        }
 
         return if (!cachedProducts.isNullOrEmpty() && category.isEmpty()) {
-            Log.e("Repository:", "Выгружен кэш прод")
-            cachedProducts
 
-        } else fetchProducts(skip, sharedPrefManager, category)
+            Log.e("Первая проверка:", "Кэш не пуст, но")
+
+            if (cachedProducts.size > skip) {
+
+                if (cachedAllProductsList.size >= cachedProducts.size) {
+                    Log.e("Вторая проверка:", "Кэш ушел")
+
+                    return cachedAllProductsList
+                }
+
+                Log.e("Вторая проверка:", "Кэш: ${cachedProducts.size} Пропускаем: ${skip}")
+
+                cachedAllProductsList.addAll(cachedProducts.drop(skip).take(20))
+
+                Log.e(
+                    "Вторая проверка:",
+                    "Выгрузили кэш. Итоговый список: ${cachedAllProductsList.size}"
+                )
+
+                cachedAllProductsList
+            } else {
+                Log.e("Вторая проверка провал:", "На следующую страницу кэша нет")
+                fetchProducts(skip, sharedPrefManager, category)
+            }
+
+        } else {
+            Log.e("Первая проверка провал:", "Кэш пуст или выбрана категория")
+            fetchProducts(skip, sharedPrefManager, category)
+        }
     }
 
     suspend fun fetchCacheCategories(
@@ -43,19 +72,17 @@ class ProductsRepository(private val apiService: ApiService) {
         skip: Int = 0, sharedPrefManager: SharedPrefManager, category: String
     ): List<Product>? {
 
-        val currentPage = ProductManager.currentPage.value.currentPage
-
+        Log.e("Repository:", "Инициализация загрузки")
         Log.e("Repository:", "Выбранная категория: $category")
 
         return try {
 
-            updateAppState(state = AppState.LOADING)
-
             return if (category.isNotEmpty()) {
-                val response = apiService.getProducts(skip, limit = 100)
+                val response = apiService.getProducts(skip, total)
                 val products = response.products
 
                 val filteredProducts = filterProductsByCategory(products, category)
+                Log.e("Repository", "Отфильтрованные категории: $filteredProducts")
 
                 sharedPrefManager.saveFilteredProducts(products)
 
@@ -64,13 +91,16 @@ class ProductsRepository(private val apiService: ApiService) {
                 val response = apiService.getProducts(skip)
                 val products = response.products
 
-                sharedPrefManager.saveProducts(products, currentPage)
-                products
+                total = response.total
+
+                cachedAllProductsList.addAll(products)
+
+                sharedPrefManager.saveAllProducts(cachedAllProductsList)
+                cachedAllProductsList
             }
 
         } catch (e: HttpException) {
             Log.e("Repository:", "Ошибка при загрузке продуктов: ${e.message}")
-            AppStateManager.setState(AppState.ERROR)
             null
         }
     }
@@ -83,7 +113,6 @@ class ProductsRepository(private val apiService: ApiService) {
 
     private suspend fun fetchCategories(sharedPrefManager: SharedPrefManager): List<String>? {
         return try {
-            AppStateManager.setState(AppState.LOADING)
             val categories = apiService.getCategories()
 
             sharedPrefManager.saveCategories(categories)
@@ -91,7 +120,6 @@ class ProductsRepository(private val apiService: ApiService) {
             categories
         } catch (e: HttpException) {
             Log.e("Repository:", "Ошибка при загрузке категорий: ${e.message}")
-            AppStateManager.setState(AppState.ERROR)
             null
         }
     }
@@ -101,7 +129,6 @@ class ProductsRepository(private val apiService: ApiService) {
 
     ): List<Product>? {
         return try {
-            AppStateManager.setState(AppState.LOADING)
 
             val response = apiService.searchProducts(title)
             val products = response.products
@@ -111,13 +138,12 @@ class ProductsRepository(private val apiService: ApiService) {
             products
         } catch (e: HttpException) {
             Log.e("Repository:", "Ошибка при выполнении поиска: ${e.message}")
-            AppStateManager.setState(AppState.ERROR)
             null
         }
     }
 
-    private fun updateAppState(state: AppState) {
-        AppStateManager.setState(state)
+    fun clearAppCache() {
+        cachedAllProductsList.clear()
     }
 
     companion object {

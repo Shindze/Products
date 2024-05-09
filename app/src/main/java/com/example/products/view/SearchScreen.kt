@@ -53,8 +53,7 @@ import com.example.products.navigation.Screens
 import com.example.products.ui.theme.nunitoFontFamily
 import com.example.products.viewmodel.Factory.SearchViewModelFactory
 import com.example.products.viewmodel.SearchViewModel
-import com.example.products.viewmodel.appstate.AppState
-import com.example.products.viewmodel.appstate.AppStateManager
+import com.example.products.viewmodel.uiState.AppState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +67,7 @@ fun SearchScreen(
 ) {
 
     val widgets = Widgets()
-    val appState = AppStateManager.status.collectAsState().value
+    val appState = viewModel.listOfProducts.collectAsState().value.appState
 
     var text by remember { mutableStateOf(viewModel.textFieldValue) }
 
@@ -145,7 +144,6 @@ fun SearchScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             when (appState) {
-                AppState.LOADING -> widgets.CustomCircularProgressBar()
                 AppState.SUCCESS ->
 
                     if (listOfProducts != null) {
@@ -160,6 +158,7 @@ fun SearchScreen(
                     }
 
                 AppState.ERROR -> widgets.EmptyText()
+                AppState.LOADING -> widgets.CustomCircularProgressBar()
             }
         }
     }

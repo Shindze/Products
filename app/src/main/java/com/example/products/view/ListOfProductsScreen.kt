@@ -1,6 +1,12 @@
 package com.example.products.view
 
-import android.util.Log
+import android.widget.Toast
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
@@ -35,11 +40,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -56,9 +61,8 @@ import com.example.products.navigation.Screens
 import com.example.products.ui.theme.nunitoFontFamily
 import com.example.products.viewmodel.Factory.ProductsViewModelFactory
 import com.example.products.viewmodel.ListOfProductsViewModel
-import com.example.products.viewmodel.appstate.AppState
-import com.example.products.viewmodel.appstate.AppStateManager
 import com.example.products.viewmodel.appstate.ProductManager
+import com.example.products.viewmodel.uiState.AppState
 import com.example.products.viewmodel.uiState.ProductsUiState
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
@@ -71,16 +75,15 @@ fun ListOfProductsScreen(
     )
 ) {
 
+    val localContext = LocalContext.current
+
     val widgets = Widgets()
-    val appState = AppStateManager.status.collectAsState().value
+    val appState = viewModel.listOfProducts.collectAsState().value.appState
 
     val listOfResponseData = viewModel.listOfProducts.collectAsState().value
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = appState == AppState.LOADING)
 
-    Log.e("ListOfProductsScreen:", "Пересборка вью")
-
-    Scaffold(
-        Modifier.fillMaxSize(),
+    Scaffold(Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CenterAlignedTopAppBar(
@@ -99,11 +102,19 @@ fun ListOfProductsScreen(
                 },
             )
         },
-    ) { innerPadding ->
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { navController.navigate(Screens.SearchScreen.route) },
+                modifier = Modifier.padding(32.dp)
+            ) {
+                Icon(Icons.Filled.Search, contentDescription = "Search")
+            }
+        }) { innerPadding ->
         SwipeRefresh(
             state = swipeRefreshState,
             onRefresh = {
                 viewModel.updateAllProductsData()
+                Toast.makeText(localContext, "Данные обновлены", Toast.LENGTH_SHORT).show()
             },
         ) {
             ScreenBody(
@@ -112,7 +123,7 @@ fun ListOfProductsScreen(
                 listOfResponseData,
                 viewModel,
                 appState,
-                widgets
+                widgets,
             )
         }
     }
@@ -130,51 +141,37 @@ private fun ScreenBody(
     ) {
     Column(modifier.fillMaxWidth()) {
         RowOfCategories(viewModel, listOfResponseData)
-        when (appState) {
-            AppState.LOADING -> widgets.CustomCircularProgressBar()
-            AppState.SUCCESS -> ListOfProducts(listOfResponseData, navigation, viewModel)
-            AppState.ERROR -> widgets.EmptyText()
-        }
+        if (appState == AppState.ERROR) {
+            widgets.EmptyText()
+        } else ListOfProducts(
+            listOfResponseData,
+            navigation,
+            viewModel,
+            appState = appState,
+        )
     }
 }
 
 @Composable
-private fun NavigationButton(viewModel: ListOfProductsViewModel) {
-    Row(Modifier.fillMaxWidth(), Arrangement.SpaceEvenly) {
+private fun LoadButton(viewModel: ListOfProductsViewModel) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 12.dp), Arrangement.Center
+    ) {
         Box(
             modifier = Modifier
                 .height(48.dp)
-                .width(128.dp)
+                .width(256.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.primary)
                 .clickable {
-                    if (ProductManager.currentPage.value.currentPage > 1) ProductManager.updateCurrentPage(
-                        ProductManager.currentPage.value.currentPage - 1
-                    )
-                    viewModel.changePage(false)
-                }, Alignment.Center
-        ) {
-            Text(
-                text = "Назад",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        }
-        Box(
-            modifier = Modifier
-                .height(48.dp)
-                .width(128.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.primary)
-                .clickable {
-                    if (ProductManager.currentPage.value.currentPage < 5) {
-                        ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage + 1)
-                    }
+                    ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage + 1)
                     viewModel.changePage(true)
                 }, Alignment.Center
         ) {
             Text(
-                text = "Вперед",
+                text = "Загрузить ещё",
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -220,42 +217,41 @@ private fun RowOfCategories(
     }
 }
 
+
 @Composable
 private fun ListOfProducts(
     listOfResponseData: ProductsUiState,
     navigation: NavController,
-    viewModel: ListOfProductsViewModel
+    viewModel: ListOfProductsViewModel,
+    appState: AppState,
 ) {
 
-    val scrollState = rememberLazyListState()
-
-    val showButton = remember {
-        derivedStateOf {
-            scrollState.canScrollForward
-        }
-    }
+    val isFiltered = ProductManager.filteredState.collectAsState().value.isFiltered
 
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(state = scrollState, modifier = Modifier.padding(horizontal = 12.dp)) {
-            if (listOfResponseData.listProducts != null) {
+        LazyColumn(modifier = Modifier.padding(horizontal = 12.dp)) {
+            if (!listOfResponseData.listProducts.isNullOrEmpty()) {
                 items(listOfResponseData.listProducts) { product ->
-                    ProductCard(navigation, product = product)
+                    if (isFiltered && appState == AppState.LOADING) {
+                        SkeletonListItem()
+                    } else {
+                        ProductCard(navigation, product = product)
+                    }
+                }
+                if (appState == AppState.LOADING) {
+                    items(20) {
+                        SkeletonListItem()
+                    }
+                }
+            } else {
+                items(20) {
+                    SkeletonListItem()
                 }
             }
             item {
-                Spacer(modifier = Modifier.height(12.dp))
-                NavigationButton(viewModel)
-            }
-        }
-
-        if (showButton.value) {
-            FloatingActionButton(
-                onClick = { navigation.navigate(Screens.SearchScreen.route) },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(32.dp)
-            ) {
-                Icon(Icons.Filled.Search, contentDescription = "Search")
+                if (!isFiltered) {
+                    LoadButton(viewModel = viewModel)
+                }
             }
         }
     }
@@ -318,6 +314,71 @@ private fun CustomListItem(
                 text = "$${product.price}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    }
+}
+
+@Composable
+fun SkeletonListItem() {
+    val shimmerColors = listOf(
+        Color.LightGray.copy(alpha = 0.3f), Color.LightGray, Color.LightGray.copy(alpha = 0.3f)
+    )
+    val transition = rememberInfiniteTransition()
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f, targetValue = 1000f, animationSpec = infiniteRepeatable(
+            tween(durationMillis = 1200, easing = LinearEasing), RepeatMode.Restart
+        ), label = ""
+    )
+
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(x = translateAnim.value, y = translateAnim.value)
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = false) {},
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(brush)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(14.dp)
+                        .background(brush)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(14.dp)
+                        .background(brush)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(16.dp)
+                    .background(brush)
             )
         }
     }

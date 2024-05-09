@@ -9,8 +9,8 @@ object ProductManager {
     private val _currentPage = MutableStateFlow(CurrentPageState())
     val currentPage: StateFlow<CurrentPageState> = _currentPage.asStateFlow()
 
-    private val _searchNavigate = MutableStateFlow(FilteredState())
-    val searchNavigate: StateFlow<FilteredState> = _searchNavigate.asStateFlow()
+    private val _filteredState = MutableStateFlow(FilteredState())
+    val filteredState: StateFlow<FilteredState> = _filteredState.asStateFlow()
 
     fun updateCurrentPage(newPage: Int) {
         if (_currentPage.value.currentPage != newPage) {
@@ -19,14 +19,14 @@ object ProductManager {
     }
 
     fun updateFilteredState(_isFiltered: Boolean) {
-        if (_searchNavigate.value.isFiltered != _isFiltered) {
-            _searchNavigate.value = _searchNavigate.value.copy(isFiltered = _isFiltered)
+        if (_filteredState.value.isFiltered != _isFiltered) {
+            _filteredState.value = _filteredState.value.copy(isFiltered = _isFiltered)
         }
     }
 }
 
 data class CurrentPageState(
-    val currentPage: Int = 1,
+    val currentPage: Int = 0,
 )
 
 data class FilteredState(

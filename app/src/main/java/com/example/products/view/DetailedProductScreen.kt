@@ -1,7 +1,6 @@
 package com.example.products.view
 
 import android.annotation.SuppressLint
-import android.util.Log
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -44,8 +43,7 @@ import com.example.products.model.Product
 import com.example.products.ui.theme.nunitoFontFamily
 import com.example.products.viewmodel.DetailedProductViewModel
 import com.example.products.viewmodel.Factory.ProductViewModelFactory
-import com.example.products.viewmodel.appstate.AppState
-import com.example.products.viewmodel.appstate.AppStateManager
+import com.example.products.viewmodel.uiState.AppState
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,12 +57,10 @@ fun ProductScreen(
 ) {
 
     val widgets = Widgets() // Удолить
-    val appState = AppStateManager.status.collectAsState().value // Избавиться
+    val appState = viewModel.listOfProducts.collectAsState().value.appState
 
     val productsState = viewModel.listOfProducts.collectAsState().value
     val product = productsState.listProducts?.find { it.id == productId.toInt() }
-
-    Log.e("ProductScreen:", "Пересборка вью")
 
     Scaffold(
         Modifier.fillMaxSize(),
@@ -109,6 +105,7 @@ fun ProductScreen(
     }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
 private fun ProductDescription(modifier: Modifier, product: Product) {
     Column(

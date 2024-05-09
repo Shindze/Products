@@ -8,10 +8,16 @@ class SharedPrefManager(context: Context) {
 
     private val sharedPreferences = context.getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
 
-    fun saveProducts(listOfProducts: List<Product>, page: Int) {
+    fun saveAllProducts(listOfProducts: List<Product>) {
         val gson = Gson()
         val json = gson.toJson(listOfProducts)
-        sharedPreferences.edit().putString("Products$page", json).apply()
+        sharedPreferences.edit().putString("Products", json).apply()
+    }
+
+    fun getAllProducts(): List<Product>? {
+        val json = sharedPreferences.getString("Products", null)
+        val type = object : TypeToken<List<Product>>() {}.type
+        return Gson().fromJson(json, type)
     }
 
     fun getProducts(page: Int): List<Product>? {

@@ -6,7 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.products.model.SharedPrefManager
 import com.example.products.viewmodel.appstate.ProductManager
-import com.example.products.viewmodel.uiState.ProductUiState
+import com.example.products.viewmodel.uiState.AppState
+import com.example.products.viewmodel.uiState.ProductsUiState
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,9 +15,9 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class DetailedProductViewModel(context: Context) : ViewModel() {
 
-    private val _listOfProducts: MutableStateFlow<ProductUiState> =
-        MutableStateFlow(ProductUiState())
-    val listOfProducts: StateFlow<ProductUiState> = _listOfProducts.asStateFlow()
+    private val _listOfProducts: MutableStateFlow<ProductsUiState> =
+        MutableStateFlow(ProductsUiState())
+    val listOfProducts: StateFlow<ProductsUiState> = _listOfProducts.asStateFlow()
 
     private val sharedPrefManager = SharedPrefManager(context)
 
@@ -28,12 +29,12 @@ class DetailedProductViewModel(context: Context) : ViewModel() {
         Log.e("ProductViewModel:", "getProducts зашел")
         try {
             val products = when {
-                ProductManager.searchNavigate.value.isFiltered -> {
+                ProductManager.filteredState.value.isFiltered -> {
                     sharedPrefManager.getFilteredProducts()
                 }
 
                 sharedPrefManager.getSearchProducts().isNullOrEmpty() -> {
-                    sharedPrefManager.getProducts(ProductManager.currentPage.value.currentPage)
+                    sharedPrefManager.getAllProducts()
                 }
 
                 else -> {
@@ -43,11 +44,21 @@ class DetailedProductViewModel(context: Context) : ViewModel() {
 
             Log.e("ProductViewModel:", "getProducts вышел")
 
-            _listOfProducts.value = _listOfProducts.value.copy(listProducts = products)
+            if (products != null) {
+                _listOfProducts.value =
+                    _listOfProducts.value.copy(listProducts = products.toMutableList())
+                updateAppState(AppState.SUCCESS)
+            }
 
         } catch (e: Exception) {
             Log.e("ProductViewModel:", "Ошибка при получении продукта: ${e.message}")
         }
+    }
+
+    private fun updateAppState(newState: AppState) {
+        _listOfProducts.value = _listOfProducts.value.copy(
+            appState = newState
+        )
     }
 
 

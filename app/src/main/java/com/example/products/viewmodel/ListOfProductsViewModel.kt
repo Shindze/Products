@@ -1,17 +1,14 @@
 package com.example.products.viewmodel
 
 import android.content.Context
-import android.net.ConnectivityManager
 import android.util.Log
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.products.model.Product
 import com.example.products.model.SharedPrefManager
 import com.example.products.repository.ProductsRepository
-import com.example.products.viewmodel.appstate.AppState
-import com.example.products.viewmodel.appstate.AppStateManager
 import com.example.products.viewmodel.appstate.ProductManager
+import com.example.products.viewmodel.uiState.AppState
 import com.example.products.viewmodel.uiState.ProductsUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -38,9 +35,10 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
         getCategories()
     }
 
-
-
     private fun getProducts(numberOfPage: Int = 0, category: String = "") {
+
+        updateAppState(AppState.LOADING)
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val productsResponse =
@@ -54,6 +52,9 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
     }
 
     private fun getCategories() {
+
+        updateAppState(AppState.LOADING)
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val categoriesResponse = repo.fetchCacheCategories(sharedPrefManager)
@@ -69,7 +70,6 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
         getProducts(category = _listOfProducts.value.selectedCategory)
     }
 
-    //Добавить в начало списка
     fun setFilterChipState(isPressed: Boolean, category: String) {
 
         val updatedSelectedCategories =
@@ -99,9 +99,13 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
     private fun processingFetchedProducts(productsResponse: List<Product>?) {
         if (productsResponse.isNullOrEmpty()) {
             logError("Продукты: нулл или пусто")
+            updateAppState(AppState.ERROR)
+
         } else {
-            Log.e("ProductsViewModel:", "Загруженные продукты: $productsResponse")
-            _listOfProducts.value = _listOfProducts.value.copy(listProducts = productsResponse)
+            Log.e("ProductsViewModel:", "Загруженные продукты: ${productsResponse.size}")
+            _listOfProducts.value = _listOfProducts.value.copy(
+                listProducts = productsResponse.toMutableList()
+            )
             updateAppState(AppState.SUCCESS)
         }
     }
@@ -119,29 +123,36 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
     private fun logError(message: String) {
         Log.e(
             "ProductsViewModel:",
-            "Продукты не получены: ${_listOfProducts.value.listProducts.toString()}"
+            "Продукты не получены"
         )
         Log.e(
             "ProductsViewModel:",
-            "Категории не получены: ${_listOfProducts.value.listCategories.toString()}"
+            "Категории не получены"
         )
         Log.e("ProductsViewModel", "Ошибка: $message")
     }
 
     fun updateAllProductsData() {
+
         count = 0
-        ProductManager.updateCurrentPage(newPage = 1)
+
+        ProductManager.updateCurrentPage(newPage = 0)
+        ProductManager.updateFilteredState(false)
+
+        repo.clearAppCache()
         sharedPrefManager.clearData()
 
         _listOfProducts.value = _listOfProducts.value.copy(
-            selectedCategoriesToChipState = emptyMap()
+            selectedCategoriesToChipState = emptyMap(),
+            selectedCategory = ""
         )
+
         getProducts()
         getCategories()
     }
 
     fun changePage(direction: Boolean) {
-        if (!ProductManager.searchNavigate.value.isFiltered) {
+        if (!ProductManager.filteredState.value.isFiltered) {
             if (direction) {
                 count += when (count <= 60) {
                     true -> 20
@@ -153,12 +164,16 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
                     false -> return
                 }
             }
+            Log.e("ProductsViewModel", "Грузим")
+
             getProducts(count, category = _listOfProducts.value.selectedCategory)
         } else return
     }
 
-    private fun updateAppState(state: AppState) {
-        AppStateManager.setState(state)
+    private fun updateAppState(newState: AppState) {
+        _listOfProducts.value = _listOfProducts.value.copy(
+            appState = newState
+        )
     }
 
     override fun onCleared() {
