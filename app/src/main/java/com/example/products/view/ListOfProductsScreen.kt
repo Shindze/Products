@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,22 +25,29 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ElevatedFilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,11 +56,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -67,7 +77,6 @@ import com.example.products.viewmodel.uiState.ProductsUiState
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListOfProductsScreen(
     navController: NavController, viewModel: ListOfProductsViewModel = viewModel(
@@ -81,35 +90,11 @@ fun ListOfProductsScreen(
     val appState = viewModel.listOfProducts.collectAsState().value.appState
 
     val listOfResponseData = viewModel.listOfProducts.collectAsState().value
-    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = appState == AppState.LOADING)
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = false)
 
-    Scaffold(Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            CenterAlignedTopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                ),
-                title = {
-                    Text(
-                        text = "Продукты",
-                        fontFamily = nunitoFontFamily,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 26.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                },
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate(Screens.SearchScreen.route) },
-                modifier = Modifier.padding(32.dp)
-            ) {
-                Icon(Icons.Filled.Search, contentDescription = "Search")
-            }
-        }) { innerPadding ->
+    Scaffold(
+        Modifier.fillMaxSize(), containerColor = MaterialTheme.colorScheme.surfaceVariant
+    ) { innerPadding ->
         SwipeRefresh(
             state = swipeRefreshState,
             onRefresh = {
@@ -137,10 +122,12 @@ private fun ScreenBody(
     viewModel: ListOfProductsViewModel,
     appState: AppState,
     widgets: Widgets,
+) {
 
+    Box(
+        Modifier.fillMaxSize()
     ) {
-    Column(modifier.fillMaxWidth()) {
-        RowOfCategories(viewModel, listOfResponseData)
+
         if (appState == AppState.ERROR) {
             widgets.EmptyText()
         } else ListOfProducts(
@@ -149,34 +136,99 @@ private fun ScreenBody(
             viewModel,
             appState = appState,
         )
+        Column(modifier) {
+            SearchRow(viewModel = viewModel)
+        }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LoadButton(viewModel: ListOfProductsViewModel) {
+private fun SearchRow(viewModel: ListOfProductsViewModel) {
+
+    var text by remember { mutableStateOf(viewModel.textFieldValue) }
+    val focusManager = LocalFocusManager.current
+
+    val isSearch = ProductManager.filteredState.collectAsState().value.isSearched
+
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(top = 12.dp, bottom = 12.dp), Arrangement.Center
+            .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
-        Box(
+        val keyboardController = LocalSoftwareKeyboardController.current
+        TextField(
+            trailingIcon = {
+                if (!isSearch) {
+                    IconButton(onClick = {
+                        keyboardController?.hide()
+                        focusManager.clearFocus()
+                        if (text.isNotEmpty()) {
+                            viewModel.searchItems()
+                            focusManager.clearFocus()
+                            ProductManager.updateSearchState(true)
+                        }
+
+                    }, content = {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = "Search",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    })
+                } else {
+                    IconButton(onClick = {
+                        keyboardController?.hide()
+                        focusManager.clearFocus()
+                        text = ""
+                        ProductManager.updateSearchState(false)
+                    }, content = {
+                        Icon(
+                            Icons.Filled.Clear,
+                            contentDescription = "Clear",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    })
+                }
+            },
+            value = text,
+            onValueChange = { newText ->
+                text = newText
+                viewModel.textFieldValue = text
+                if (text.isEmpty()) ProductManager.updateSearchState(false)
+            },
             modifier = Modifier
-                .height(48.dp)
-                .width(256.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.primary)
-                .clickable {
-                    ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage + 1)
-                    viewModel.changePage(true)
-                }, Alignment.Center
-        ) {
-            Text(
-                text = "Загрузить ещё",
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
-        }
+                .clip(RoundedCornerShape(50.dp))
+                .weight(1f),
+            colors = TextFieldDefaults.textFieldColors(
+                containerColor = MaterialTheme.colorScheme.surfaceTint,
+                unfocusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                focusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                cursorColor = MaterialTheme.colorScheme.onPrimary,
+
+                disabledLabelColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            ),
+
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+
+            keyboardActions = KeyboardActions(onNext = {
+                keyboardController?.hide()
+                if (text.isNotEmpty()) ProductManager.updateSearchState(true)
+                viewModel.searchItems()
+            }),
+
+            singleLine = true,
+            placeholder = {
+                Text(
+                    "Введите запрос",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontFamily = nunitoFontFamily,
+                    fontWeight = FontWeight.SemiBold
+                )
+            },
+        )
     }
 }
 
@@ -185,17 +237,24 @@ private fun LoadButton(viewModel: ListOfProductsViewModel) {
 private fun RowOfCategories(
     viewModel: ListOfProductsViewModel, listOfResponseData: ProductsUiState
 ) {
-    LazyRow(Modifier.padding(start = 4.dp)) {
+    LazyRow {
         if (listOfResponseData.listCategories != null) {
             items(listOfResponseData.listCategories) { category ->
-                val isSelected = viewModel.listOfProducts.value.selectedCategoriesToChipState?.get(
-                    category
-                ) ?: false
+                val isSelected =
+                    viewModel.listOfProducts.value.selectedCategoriesToChipState?.get(
+                        category
+                    ) ?: false
                 Spacer(modifier = Modifier.width(8.dp))
-                FilterChip(
+                ElevatedFilterChip(
                     onClick = {
                         viewModel.setFilterChipState(!isSelected, category)
                     },
+                    elevation = FilterChipDefaults.filterChipElevation(elevation = 0.dp),
+                    colors = FilterChipDefaults.elevatedFilterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+                    ),
                     label = {
                         Text(category)
                     },
@@ -225,33 +284,43 @@ private fun ListOfProducts(
     viewModel: ListOfProductsViewModel,
     appState: AppState,
 ) {
-
-    val isFiltered = ProductManager.filteredState.collectAsState().value.isFiltered
+    val productManagerState = ProductManager.filteredState.collectAsState().value
+    val isFiltered = productManagerState.isFiltered
+    val isSearched = productManagerState.isSearched
 
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(modifier = Modifier.padding(horizontal = 12.dp)) {
-            if (!listOfResponseData.listProducts.isNullOrEmpty()) {
-                items(listOfResponseData.listProducts) { product ->
+        LazyColumn(contentPadding = PaddingValues(top = 98.dp)) {
+            item {
+                RowOfCategories(viewModel = viewModel, listOfResponseData = listOfResponseData)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            val productsList = if (isSearched) {
+                listOfResponseData.listSearchProducts
+            } else {
+                listOfResponseData.listProducts
+            }
+
+
+            productsList?.let { products ->
+                items(products) { product ->
                     if (isFiltered && appState == AppState.LOADING) {
                         SkeletonListItem()
                     } else {
                         ProductCard(navigation, product = product)
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
+
                 if (appState == AppState.LOADING) {
-                    items(20) {
-                        SkeletonListItem()
-                    }
+                    items(20) { SkeletonListItem() }
                 }
-            } else {
-                items(20) {
-                    SkeletonListItem()
-                }
+            } ?: run {
+                items(20) { SkeletonListItem() }
             }
-            item {
-                if (!isFiltered) {
-                    LoadButton(viewModel = viewModel)
-                }
+
+            if (!isFiltered && !isSearched && !listOfResponseData.listProducts.isNullOrEmpty()) {
+                item { LoadButton(viewModel = viewModel) }
             }
         }
     }
@@ -264,57 +333,74 @@ private fun CustomListItem(
     product: Product,
     backgroundColor: Color,
 ) {
-    Spacer(modifier = Modifier.height(12.dp))
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                navigation.navigate(
-                    route = "${Screens.ProductScreen.route}/${product.id}",
-                ) {
-                    popUpTo(Screens.MainScren.route) {
-                        inclusive = false
-                    }
+    Surface(modifier = Modifier
+        .fillMaxWidth()
+        .clickable {
+            navigation.navigate(
+                route = "${Screens.ProductScreen.route}/${product.id}",
+            ) {
+                popUpTo(Screens.MainScreen.route) {
+                    inclusive = false
                 }
-            }, color = backgroundColor, shape = RoundedCornerShape(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = product.thumbnail,
-                contentDescription = "Product Image",
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(
-                modifier = Modifier.weight(1f)
+            }
+        }
+        .padding(horizontal = 12.dp),
+        color = backgroundColor,
+        shape = RoundedCornerShape(24.dp)) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                AsyncImage(
+                    model = product.thumbnail,
+                    contentDescription = "Product Image",
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Text(
+                    text = "$${product.price}",
+                    fontFamily = nunitoFontFamily,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
                     text = product.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    fontFamily = nunitoFontFamily,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                Text(
-                    text = product.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = "$${product.price}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = product.description,
+                    fontFamily = nunitoFontFamily,
+                    fontWeight = FontWeight.Normal,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
@@ -341,47 +427,92 @@ private fun SkeletonListItem() {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = false) {},
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(16.dp)
+            .padding(horizontal = 12.dp),
+        color = MaterialTheme.colorScheme.outline,
+        shape = RoundedCornerShape(24.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(brush),
+                )
+                Box(
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(brush),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Box(
                 modifier = Modifier
-                    .size(64.dp)
+                    .width(200.dp)
+                    .height(20.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(brush)
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(14.dp)
-                        .background(brush)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(14.dp)
-                        .background(brush)
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Spacer(
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Box(
                 modifier = Modifier
-                    .width(40.dp)
-                    .height(16.dp)
-                    .background(brush)
+                    .width(250.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(brush),
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Box(
+                modifier = Modifier
+                    .width(300.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(brush),
             )
         }
     }
+}
+
+@Composable
+private fun LoadButton(viewModel: ListOfProductsViewModel) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp), Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .height(48.dp)
+                .width(256.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable {
+                    ProductManager.updateCurrentPage(ProductManager.currentPage.value.currentPage + 1)
+                    viewModel.changePage(true)
+                }, Alignment.Center
+        ) {
+            Text(
+                text = "Загрузить ещё",
+                textAlign = TextAlign.Center,
+                fontFamily = nunitoFontFamily,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(128.dp))
 }
 
 @Composable
@@ -391,6 +522,6 @@ private fun ProductCard(
     CustomListItem(
         navController,
         product = product,
-        backgroundColor = MaterialTheme.colorScheme.primary,
+        backgroundColor = MaterialTheme.colorScheme.surface,
     )
 }

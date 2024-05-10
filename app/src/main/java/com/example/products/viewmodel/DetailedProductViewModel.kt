@@ -29,23 +29,15 @@ class DetailedProductViewModel(context: Context) : ViewModel() {
 
         updateAppState(AppState.LOADING)
 
-        Log.e("ProductViewModel:", "getProducts зашел")
         try {
-            val products = when {
-                ProductManager.filteredState.value.isFiltered -> {
-                    sharedPrefManager.getFilteredProducts()
-                }
 
-                sharedPrefManager.getSearchProducts().isNullOrEmpty() -> {
-                    sharedPrefManager.getAllProducts()
-                }
-
-                else -> {
-                    sharedPrefManager.getSearchProducts()
-                }
+            val products = if (ProductManager.filteredState.value.isFiltered) {
+                sharedPrefManager.getFilteredProducts()
+            } else if (ProductManager.filteredState.value.isSearched) {
+                sharedPrefManager.getSearchProducts()
+            } else {
+                sharedPrefManager.getAllProducts()
             }
-
-            Log.e("ProductViewModel:", "getProducts вышел")
 
             if (products != null) {
                 _listOfProducts.value =

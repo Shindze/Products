@@ -2,6 +2,9 @@ package com.example.products.viewmodel
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.products.model.Product
@@ -28,6 +31,8 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
 
     private val sharedPrefManager = SharedPrefManager(context)
     private var count: Int = 0
+
+    var textFieldValue by mutableStateOf("")
 
     init {
         Log.e("ProductViewModel INIT", "INIT")
@@ -117,6 +122,25 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
             Log.e("ProductsViewModel:", "Загруженные категории: $categoriesResponse")
             _listOfProducts.value = _listOfProducts.value.copy(listCategories = categoriesResponse)
             updateAppState(AppState.SUCCESS)
+        }
+    }
+
+    fun searchItems() {
+
+        updateAppState(AppState.LOADING)
+
+        viewModelScope.launch {
+            try {
+                val products = repo.searchProducts(textFieldValue, sharedPrefManager)
+                if (products != null) {
+                    _listOfProducts.value =
+                        _listOfProducts.value.copy(listSearchProducts = products.toMutableList())
+                }
+
+                updateAppState(AppState.SUCCESS)
+            } catch (e: Exception) {
+                Log.e("SearchViewModel:", "Ошибка при выполнении поиска: ${e.message}")
+            }
         }
     }
 

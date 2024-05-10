@@ -23,6 +23,12 @@ object ProductManager {
             _filteredState.value = _filteredState.value.copy(isFiltered = _isFiltered)
         }
     }
+
+    fun updateSearchState(_isSearched: Boolean) {
+        if (_filteredState.value.isSearched != _isSearched) {
+            _filteredState.value = _filteredState.value.copy(isSearched = _isSearched)
+        }
+    }
 }
 
 data class CurrentPageState(
@@ -31,4 +37,5 @@ data class CurrentPageState(
 
 data class FilteredState(
     val isFiltered: Boolean = false,
+    val isSearched: Boolean = false,
 )

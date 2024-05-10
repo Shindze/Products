@@ -8,13 +8,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.products.view.ListOfProductsScreen
 import com.example.products.view.ProductScreen
-import com.example.products.view.SearchScreen
 
 @Composable
 fun Navigation() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = Screens.MainScren.route) {
-        composable(route = Screens.MainScren.route) {
+    NavHost(navController = navController, startDestination = Screens.MainScreen.route) {
+        composable(route = Screens.MainScreen.route) {
             ListOfProductsScreen(navController = navController)
         }
         composable(route = "${Screens.ProductScreen.route}/{product_Id}",
@@ -25,10 +24,6 @@ fun Navigation() {
             )) {
             val prodId = it.arguments?.getString("product_Id") ?: ""
             ProductScreen(navController = navController, productId = prodId)
-        }
-
-        composable(route = Screens.SearchScreen.route) {
-            SearchScreen(navController = navController)
         }
     }
 }
