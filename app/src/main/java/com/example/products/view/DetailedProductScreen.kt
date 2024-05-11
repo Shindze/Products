@@ -1,6 +1,12 @@
 package com.example.products.view
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -22,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -29,6 +36,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -56,7 +66,6 @@ fun ProductScreen(
     productId: String,
 ) {
 
-    val widgets = Widgets() // Удолить
     val appState = viewModel.listOfProducts.collectAsState().value.appState
 
     val productsState = viewModel.listOfProducts.collectAsState().value
@@ -64,12 +73,12 @@ fun ProductScreen(
 
     Scaffold(
         Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
         topBar = {
             CenterAlignedTopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
                 title = {
                     Text(
@@ -77,7 +86,7 @@ fun ProductScreen(
                         fontFamily = nunitoFontFamily,
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 26.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
                 navigationIcon = {
@@ -93,15 +102,16 @@ fun ProductScreen(
 
         ) { innerPadding ->
         when (appState) {
-            AppState.LOADING -> widgets.CustomCircularProgressBar()
+            AppState.INITIAL -> SkeletonProduct(modifier = Modifier.padding(innerPadding))
+            AppState.LOADING -> SkeletonProduct(modifier = Modifier.padding(innerPadding))
+
             AppState.SUCCESS -> product?.let {
                 ProductDescription(
                     Modifier.padding(innerPadding), it
                 )
             }
 
-            AppState.ERROR -> widgets.EmptyText()
-            AppState.INITIAL -> Unit
+            AppState.ERROR -> ErrorText(modifier = Modifier.padding(innerPadding))
         }
     }
 }
@@ -118,9 +128,8 @@ private fun ProductDescription(modifier: Modifier, product: Product) {
         Box(
             Modifier
                 .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(MaterialTheme.colorScheme.surface)
         ) {
-
             if (product.images.size > 1) {
                 Row(
                     Modifier
@@ -193,12 +202,14 @@ private fun ProductDescription(modifier: Modifier, product: Product) {
             text = product.title,
             fontFamily = nunitoFontFamily,
             fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 22.sp
         )
         Text(
             text = "${product.rating.toString()}★",
             fontFamily = nunitoFontFamily,
             fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 16.sp
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -206,8 +217,114 @@ private fun ProductDescription(modifier: Modifier, product: Product) {
             text = product.description,
             textAlign = TextAlign.Justify,
             fontFamily = nunitoFontFamily,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Normal,
             fontSize = 16.sp
+        )
+    }
+}
+
+@Composable
+private fun SkeletonProduct(modifier: Modifier) {
+    val shimmerColors = listOf(
+        Color.LightGray.copy(alpha = 0.3f), Color.LightGray, Color.LightGray.copy(alpha = 0.3f)
+    )
+    val transition = rememberInfiniteTransition(label = "")
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f, targetValue = 1000f, animationSpec = infiniteRepeatable(
+            tween(durationMillis = 1200, easing = LinearEasing), RepeatMode.Restart
+        ), label = ""
+    )
+
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(x = translateAnim.value, y = translateAnim.value)
+    )
+
+    Surface(
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        color = MaterialTheme.colorScheme.outline,
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Column(Modifier.padding(16.dp)) {
+
+            Row(Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .height(345.dp)
+                        .width(246.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(brush),
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Box(
+                    modifier = Modifier
+                        .height(345.dp)
+                        .width(246.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(brush),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Box(
+                modifier = Modifier
+                    .width(100.dp)
+                    .height(28.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(brush),
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Box(
+                modifier = Modifier
+                    .width(200.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(brush)
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Box(
+                modifier = Modifier
+                    .width(250.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(brush),
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Box(
+                modifier = Modifier
+                    .width(300.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(brush),
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(16.dp))
+}
+
+@Composable
+private fun ErrorText(
+    modifier: Modifier
+) {
+    Spacer(modifier.height(64.dp))
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+        Text(
+            text = "Упс, тут ничего нет :(",
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(10.dp)
         )
     }
 }

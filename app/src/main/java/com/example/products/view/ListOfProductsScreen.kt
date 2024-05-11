@@ -86,7 +86,6 @@ fun ListOfProductsScreen(
 
     val localContext = LocalContext.current
 
-    val widgets = Widgets()
     val appState = viewModel.listOfProducts.collectAsState().value.appState
 
     val listOfResponseData = viewModel.listOfProducts.collectAsState().value
@@ -108,7 +107,6 @@ fun ListOfProductsScreen(
                 listOfResponseData,
                 viewModel,
                 appState,
-                widgets,
             )
         }
     }
@@ -121,20 +119,13 @@ private fun ScreenBody(
     listOfResponseData: ProductsUiState,
     viewModel: ListOfProductsViewModel,
     appState: AppState,
-    widgets: Widgets,
 ) {
 
     Box(
         Modifier.fillMaxSize()
     ) {
-
-        if (appState == AppState.ERROR) {
-            widgets.EmptyText()
-        } else ListOfProducts(
-            listOfResponseData,
-            navigation,
-            viewModel,
-            appState = appState,
+        ListOfProducts(
+            listOfResponseData, navigation, viewModel, appState = appState, modifier = modifier
         )
         Column(modifier) {
             SearchRow(viewModel = viewModel)
@@ -240,10 +231,9 @@ private fun RowOfCategories(
     LazyRow {
         if (listOfResponseData.listCategories != null) {
             items(listOfResponseData.listCategories) { category ->
-                val isSelected =
-                    viewModel.listOfProducts.value.selectedCategoriesToChipState?.get(
-                        category
-                    ) ?: false
+                val isSelected = viewModel.listOfProducts.value.selectedCategoriesToChipState?.get(
+                    category
+                ) ?: false
                 Spacer(modifier = Modifier.width(8.dp))
                 ElevatedFilterChip(
                     onClick = {
@@ -283,24 +273,26 @@ private fun ListOfProducts(
     navigation: NavController,
     viewModel: ListOfProductsViewModel,
     appState: AppState,
+    modifier: Modifier
 ) {
     val productManagerState = ProductManager.filteredState.collectAsState().value
     val isFiltered = productManagerState.isFiltered
     val isSearched = productManagerState.isSearched
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(contentPadding = PaddingValues(top = 98.dp)) {
-            item {
-                RowOfCategories(viewModel = viewModel, listOfResponseData = listOfResponseData)
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+    LazyColumn(
+        contentPadding = PaddingValues(top = 98.dp)
+    ) {
+        item {
+            RowOfCategories(viewModel = viewModel, listOfResponseData = listOfResponseData)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
+        if (appState != AppState.ERROR) {
             val productsList = if (isSearched) {
                 listOfResponseData.listSearchProducts
             } else {
                 listOfResponseData.listProducts
             }
-
 
             productsList?.let { products ->
                 items(products) { product ->
@@ -322,6 +314,8 @@ private fun ListOfProducts(
             if (!isFiltered && !isSearched && !listOfResponseData.listProducts.isNullOrEmpty()) {
                 item { LoadButton(viewModel = viewModel) }
             }
+        } else item {
+            ErrorText(modifier)
         }
     }
 }
@@ -333,20 +327,21 @@ private fun CustomListItem(
     product: Product,
     backgroundColor: Color,
 ) {
-    Surface(modifier = Modifier
-        .fillMaxWidth()
-        .clickable {
-            navigation.navigate(
-                route = "${Screens.ProductScreen.route}/${product.id}",
-            ) {
-                popUpTo(Screens.MainScreen.route) {
-                    inclusive = false
+    Surface(
+        modifier = Modifier
+            .padding(horizontal = 12.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .clickable {
+                navigation.navigate(
+                    route = "${Screens.ProductScreen.route}/${product.id}",
+                ) {
+                    popUpTo(Screens.MainScreen.route) {
+                        inclusive = false
+                    }
                 }
-            }
-        }
-        .padding(horizontal = 12.dp),
-        color = backgroundColor,
-        shape = RoundedCornerShape(24.dp)) {
+            }, color = backgroundColor, shape = RoundedCornerShape(24.dp)
+    ) {
         Column(Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -410,7 +405,7 @@ private fun SkeletonListItem() {
     val shimmerColors = listOf(
         Color.LightGray.copy(alpha = 0.3f), Color.LightGray, Color.LightGray.copy(alpha = 0.3f)
     )
-    val transition = rememberInfiniteTransition()
+    val transition = rememberInfiniteTransition(label = "")
     val translateAnim = transition.animateFloat(
         initialValue = 0f, targetValue = 1000f, animationSpec = infiniteRepeatable(
             tween(durationMillis = 1200, easing = LinearEasing), RepeatMode.Restart
@@ -425,8 +420,8 @@ private fun SkeletonListItem() {
 
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = 12.dp)
+            .fillMaxWidth(),
         color = MaterialTheme.colorScheme.outline,
         shape = RoundedCornerShape(24.dp)
     ) {
@@ -513,6 +508,22 @@ private fun LoadButton(viewModel: ListOfProductsViewModel) {
         }
     }
     Spacer(modifier = Modifier.height(128.dp))
+}
+
+@Composable
+private fun ErrorText(
+    modifier: Modifier
+) {
+    Spacer(modifier.height(64.dp))
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+        Text(
+            text = "Упс, тут ничего нет :(",
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(10.dp)
+        )
+    }
 }
 
 @Composable
