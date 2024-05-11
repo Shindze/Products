@@ -423,7 +423,6 @@ private fun SkeletonListItem() {
         end = Offset(x = translateAnim.value, y = translateAnim.value)
     )
 
-    Spacer(modifier = Modifier.height(12.dp))
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -483,6 +482,7 @@ private fun SkeletonListItem() {
             )
         }
     }
+    Spacer(modifier = Modifier.height(16.dp))
 }
 
 @Composable
