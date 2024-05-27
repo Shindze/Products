@@ -50,15 +50,15 @@ class SharedPrefManager(context: Context) {
         return Gson().fromJson(json, type)
     }
 
-    fun saveCategories(listOfCategories: List<String>) {
+    fun saveCategories(listOfCategories: List<CategoriesResponse>) {
         val gson = Gson()
         val json = gson.toJson(listOfCategories)
         sharedPreferences.edit().putString("Categories", json).apply()
     }
 
-    fun getCategories(): List<String>? {
+    fun getCategories(): List<CategoriesResponse>? {
         val json = sharedPreferences.getString("Categories", null)
-        val type = object : TypeToken<List<String>>() {}.type
+        val type = object : TypeToken<List<CategoriesResponse>>() {}.type
         return Gson().fromJson(json, type)
     }
 

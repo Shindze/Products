@@ -63,10 +63,11 @@ class ListOfProductsViewModel(context: Context) : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val categoriesResponse = repo.fetchCacheCategories(sharedPrefManager)
-                processingFetchedCategories(categoriesResponse)
+                val namesList = categoriesResponse?.map { it.name }
+
+                processingFetchedCategories(namesList)
             } catch (e: Exception) {
                 logError("getCategories: Ошибка запроса:${e.message}")
-                updateAppState(AppState.ERROR)
             }
         }
     }

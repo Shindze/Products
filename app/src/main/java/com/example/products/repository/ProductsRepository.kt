@@ -2,6 +2,7 @@ package com.example.products.repository
 
 import android.util.Log
 import coil.network.HttpException
+import com.example.products.model.CategoriesResponse
 import com.example.products.model.Product
 import com.example.products.model.SharedPrefManager
 import com.example.products.network.ApiClient
@@ -57,7 +58,7 @@ class ProductsRepository(private val apiService: ApiService) {
 
     suspend fun fetchCacheCategories(
         sharedPrefManager: SharedPrefManager
-    ): List<String>? {
+    ): List<CategoriesResponse>? {
 
         val cachedProducts = sharedPrefManager.getCategories()
 
@@ -111,7 +112,7 @@ class ProductsRepository(private val apiService: ApiService) {
         }
     }
 
-    private suspend fun fetchCategories(sharedPrefManager: SharedPrefManager): List<String>? {
+    private suspend fun fetchCategories(sharedPrefManager: SharedPrefManager): List<CategoriesResponse>? {
         return try {
             val categories = apiService.getCategories()
 

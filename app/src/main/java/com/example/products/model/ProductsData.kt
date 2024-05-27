@@ -19,4 +19,12 @@ data class ProductResponse(
     val total: Int
 )
 
-typealias CategoriesResponse = List<String>
+// Старые категории
+//typealias CategoriesResponse = List<String>
+
+// Новые категории
+data class CategoriesResponse(
+    val slug: String,
+    val name: String,
+    val url: String
+)
